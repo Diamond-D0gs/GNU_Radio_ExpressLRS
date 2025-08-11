@@ -1,0 +1,806 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: elrs_transmitter
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Not titled yet
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: bandwidth
+  id: variable
+  parameters:
+    comment: ''
+    value: 8e3
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [312, 20.0]
+    rotation: 0
+    state: enabled
+- name: binding_phrase
+  id: variable
+  parameters:
+    comment: ''
+    value: '"TestBindingPhrase"'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1304, 28.0]
+    rotation: 0
+    state: enabled
+- name: counter
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1464, 28.0]
+    rotation: 0
+    state: enabled
+- name: cr
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [496, 20.0]
+    rotation: 0
+    state: enabled
+- name: crc
+  id: variable
+  parameters:
+    comment: ''
+    value: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [576, 20.0]
+    rotation: 0
+    state: enabled
+- name: disable
+  id: variable
+  parameters:
+    comment: ''
+    value: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1544, 28.0]
+    rotation: 0
+    state: enabled
+- name: freq_center
+  id: variable
+  parameters:
+    comment: ''
+    value: '914700000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [880, 28.0]
+    rotation: 0
+    state: enabled
+- name: freq_count
+  id: variable
+  parameters:
+    comment: ''
+    value: '20'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1208, 28.0]
+    rotation: 0
+    state: enabled
+- name: freq_start
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center - (wide_samp_rate // 2)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [776, 28.0]
+    rotation: 0
+    state: enabled
+- name: freq_stop
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center + (wide_samp_rate // 2)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [680, 28.0]
+    rotation: 0
+    state: enabled
+- name: freq_temp
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1112, 28.0]
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: bandwidth*2
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [200, 20.0]
+    rotation: 0
+    state: enabled
+- name: sdr_buffer_size
+  id: variable
+  parameters:
+    comment: ''
+    value: '512'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1504, 116.0]
+    rotation: 0
+    state: enabled
+- name: sf
+  id: variable
+  parameters:
+    comment: ''
+    value: '7'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [416, 20.0]
+    rotation: 0
+    state: enabled
+- name: wide_samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: 2e5
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [984, 28.0]
+    rotation: 0
+    state: enabled
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: '1'
+    comment: ''
+    freq: freq_temp - 3.7e3
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0'
+    samp_rate: wide_samp_rate
+    showports: 'False'
+    type: complex
+    waveform: analog.GR_COS_WAVE
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [368, 548.0]
+    rotation: 0
+    state: disabled
+- name: blocks_divide_xx_0
+  id: blocks_divide_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1080, 400.0]
+    rotation: 0
+    state: disabled
+- name: blocks_message_strobe_0
+  id: blocks_message_strobe
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    msg: pmt.intern("")
+    period: '1000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [784, 124.0]
+    rotation: 0
+    state: enabled
+- name: blocks_msgpair_to_var_0
+  id: blocks_msgpair_to_var
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    target: freq_temp
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [568, 308.0]
+    rotation: 0
+    state: enabled
+- name: blocks_multiply_xx_0
+  id: blocks_multiply_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [640, 456.0]
+    rotation: 0
+    state: disabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import pmt\nimport numpy as np\nfrom gnuradio import gr\nfrom hashlib\
+      \ import md5\n\nclass fhss_controller(gr.sync_block):\n    # This is the corrected\
+      \ line with default values\n    def __init__(self, binding_phrase=\"\", freq_start=0.0,\
+      \ freq_stop=0.0, freq_count=1, freq_center=0.0, disable=False):\n        gr.sync_block.__init__(self,\n\
+      \            name='FHSS Controller',\n            in_sig=None,\n           \
+      \ out_sig=None)\n        \n        # Store parameters passed from GRC\n    \
+      \    self.binding_phrase = binding_phrase\n        self.freq_start = freq_start\n\
+      \        self.freq_stop = freq_stop\n        self.freq_count = freq_count\n\
+      \        self.freq_center = freq_center\n        self.disable = disable\n\n\
+      \        # Register message ports\n        self.message_port_register_in(pmt.intern(\"\
+      msg_in\"))\n        self.message_port_register_out(pmt.intern(\"msg_out\"))\n\
+      \        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\n \
+      \       # --- Setup logic from your script ---\n        self.FHSS_SEQUENCE_LEN\
+      \ = 256\n        self.OTA_VERSION_ID = 6\n        \n        if self.freq_count\
+      \ > 1:\n            self.freq_spread = abs(self.freq_stop - self.freq_start)\
+      \ // (self.freq_count - 1)\n        else:\n            self.freq_spread = 0\
+      \ # Provide a safe default\n\n        # Add another check for the next line\n\
+      \        if self.freq_count > 0:\n            self.num_primary_bands = (self.FHSS_SEQUENCE_LEN\
+      \ // self.freq_count) * self.freq_count\n        else:\n            self.num_primary_bands\
+      \ = 0 # Provide a safe default\n\n        uid_bytes = md5(self.binding_phrase.encode()).digest()[0:6]\n\
+      \        self.seed = (uid_bytes[2] << 24) | (uid_bytes[3] << 16) | (uid_bytes[4]\
+      \ << 8) | (uid_bytes[5] ^ self.OTA_VERSION_ID)\n        self.freq_sequence =\
+      \ [0] * self.FHSS_SEQUENCE_LEN\n        self.fhss_index = 0\n        \n    \
+      \    self.build_random_fhss_sequence()\n\n    def elrs_rng(self):\n        self.seed\
+      \ = (0x343FD * self.seed + 0x269EC3) % 0x80000000\n        return self.seed\
+      \ >> 16\n    \n    def build_random_fhss_sequence(self):\n        # Only build\
+      \ if freq_count is valid\n        if self.freq_count < 2: return\n\n       \
+      \ for i in range(self.num_primary_bands):\n            self.freq_sequence[i]\
+      \ = i % self.freq_count\n        \n        for i in range(1, self.num_primary_bands):\n\
+      \             if (i % self.freq_count) != 0:\n                offset = (i //\
+      \ self.freq_count) * self.freq_count\n                rand = (self.elrs_rng()\
+      \ % (self.freq_count - 1)) + 1\n                self.freq_sequence[i], self.freq_sequence[offset\
+      \ + rand] = self.freq_sequence[offset + rand], self.freq_sequence[i]\n\n   \
+      \ def handle_msg(self, msg):\n        if not self.disable:\n            current_freq_index\
+      \ = self.freq_sequence[self.fhss_index]\n            absolute_freq = self.freq_start\
+      \ + (current_freq_index * self.freq_spread)\n            freq_offset = absolute_freq\
+      \ - self.freq_center\n\n            key = pmt.intern(\"freq_temp\")\n      \
+      \      value = pmt.from_double(freq_offset + 3.7e6) # Temp fix\n           \
+      \ output_msg = pmt.cons(key, value)\n\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n            \n            self.fhss_index = (self.fhss_index\
+      \ + 1) % self.freq_count\n        else:\n            key = pmt.intern(\"freq_temp\"\
+      )\n            value = pmt.from_double(self.freq_center + 3.7e6) # Temp fix\n\
+      \            output_msg = pmt.cons(key, value)\n\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n\n\n    def work(self, input_items, output_items):\n\
+      \        return 0"
+    affinity: ''
+    alias: ''
+    binding_phrase: binding_phrase
+    comment: ''
+    disable: disable
+    freq_center: freq_center
+    freq_count: freq_count
+    freq_start: freq_start
+    freq_stop: freq_stop
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('FHSS Controller', 'fhss_controller', [('binding_phrase', "''"), ('freq_start',
+      '0.0'), ('freq_stop', '0.0'), ('freq_count', '1'), ('freq_center', '0.0'), ('disable',
+      'False')], [('msg_in', 'message', 1)], [('msg_out', 'message', 1)], '', ['binding_phrase',
+      'disable', 'freq_center', 'freq_count', 'freq_start', 'freq_stop'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [272, 268.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_1
+  id: epy_block
+  parameters:
+    _source_code: "import pmt\nimport numpy as np\nfrom gnuradio import gr\n\nclass\
+      \ counter_formatter(gr.sync_block):\n    \"\"\"\n    Receives a trigger message.\
+      \ On each trigger, it formats a string\n    with the value of a 'counter' variable\
+      \ from the top_block,\n    sends it as a new message, and increments the counter.\n\
+      \    \"\"\"\n    def __init__(self):\n        gr.sync_block.__init__(self,\n\
+      \            name='Counter Formatter',\n            in_sig=None,\n         \
+      \   out_sig=None)\n\n        self.counter = 0\n        self.message_port_register_in(pmt.intern(\"\
+      msg_in\"))\n        self.message_port_register_out(pmt.intern(\"msg_out\"))\n\
+      \        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\n \
+      \   def handle_msg(self, msg):\n        # 1. Format the string using the flowgraph's\
+      \ 'counter' variable\n        # Note: self.counter works because the 'counter'\
+      \ Variable block\n        # creates a 'self.counter' attribute on the main flowgraph\
+      \ class.\n        payload_str = \"TEST \" + str(self.counter)\n\n        # 2.\
+      \ Create the new PMT message\n        output_msg = pmt.intern(payload_str)\n\
+      \n        # 3. Publish the new message\n        self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n        \n        # 4. Increment the counter for the\
+      \ next time\n        self.counter += 1\n\n    def work(self, input_items, output_items):\n\
+      \        # This block only processes messages, so work() does nothing.\n   \
+      \     return 0"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('Counter Formatter', 'counter_formatter', [], [('msg_in', 'message',
+      1)], [('msg_out', 'message', 1)], "\n    Receives a trigger message. On each
+      trigger, it formats a string\n    with the value of a 'counter' variable from
+      the top_block,\n    sends it as a new message, and increments the counter.\n    ",
+      [])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1016, 136.0]
+    rotation: 0
+    state: enabled
+- name: iio_pluto_sink_0
+  id: iio_pluto_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    attenuation1: '50.0'
+    bandwidth: int(wide_samp_rate)
+    buffer_size: sdr_buffer_size
+    comment: ''
+    cyclic: 'False'
+    filter: ''
+    filter_source: '''Auto'''
+    fpass: '0'
+    frequency: int(freq_temp)
+    fstop: '0'
+    len_tag_key: ''
+    samplerate: int(wide_samp_rate)
+    type: fc32
+    uri: ip:192.168.2.1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [792, 348.0]
+    rotation: 0
+    state: enabled
+- name: iio_pluto_source_0
+  id: iio_pluto_source
+  parameters:
+    affinity: ''
+    alias: ''
+    bandwidth: int(wide_samp_rate)
+    bbdc: 'True'
+    buffer_size: sdr_buffer_size
+    comment: ''
+    filter: ''
+    filter_source: '''Auto'''
+    fpass: '0'
+    frequency: int(freq_temp)
+    fstop: '0'
+    gain1: '''fast_attack'''
+    len_tag_key: packet_len
+    manual_gain1: '64'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    quadrature: 'True'
+    rfdc: 'True'
+    samplerate: int(wide_samp_rate)
+    type: fc32
+    uri: ip:192.168.2.1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [784, 516.0]
+    rotation: 0
+    state: enabled
+- name: lora_rx_0
+  id: lora_rx
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: int(bandwidth)
+    comment: ''
+    cr: '1'
+    has_crc: 'True'
+    impl_head: 'False'
+    ldro: '2'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    pay_len: '255'
+    print_rx: '[True,True]'
+    samp_rate: int(samp_rate)
+    sf: '7'
+    soft_decoding: 'True'
+    sync_word: '[0x12]'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1432, 364.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_add_crc_0
+  id: lora_sdr_add_crc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    has_crc: crc
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [648, 236.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_gray_demap_0
+  id: lora_sdr_gray_demap
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sf: sf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1136, 252.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_hamming_enc_0
+  id: lora_sdr_hamming_enc
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    cr: cr
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sf: sf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [808, 228.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_header_0
+  id: lora_sdr_header
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    cr: cr
+    has_crc: crc
+    impl_head: 'False'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [504, 116.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_interleaver_0
+  id: lora_sdr_interleaver
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: '125000'
+    comment: ''
+    cr: cr
+    ldro: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    sf: sf
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [976, 276.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_modulate_0
+  id: lora_sdr_modulate
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: int(bandwidth)
+    comment: ''
+    frame_zero_padd: int(20*2**sf*samp_rate/bandwidth)
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    preamb_len: '8'
+    samp_rate: int(samp_rate)
+    sf: sf
+    sync_words: '18'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1320, 236.0]
+    rotation: 0
+    state: enabled
+- name: lora_sdr_whitening_0
+  id: lora_sdr_whitening
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    is_hex: 'False'
+    length_tag_name: '''packet_len'''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    separator: ''','''
+    source_type: message_strobe
+    use_length_tag: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [264, 120.0]
+    rotation: 0
+    state: enabled
+- name: qtgui_waterfall_sink_x_0
+  id: qtgui_waterfall_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    axislabels: 'True'
+    bw: freq_stop - freq_start
+    color1: '0'
+    color10: '0'
+    color2: '0'
+    color3: '0'
+    color4: '0'
+    color5: '0'
+    color6: '0'
+    color7: '0'
+    color8: '0'
+    color9: '0'
+    comment: ''
+    fc: (freq_stop + freq_start) / 2
+    fftsize: '512'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    int_max: '0'
+    int_min: '-140'
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '""'
+    nconnections: '1'
+    showports: 'False'
+    type: complex
+    update_time: '0.01'
+    wintype: window.WIN_RECTANGULAR
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1144, 532.0]
+    rotation: 0
+    state: enabled
+- name: rational_resampler_xxx_0
+  id: rational_resampler_xxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    decim: '5'
+    fbw: '0'
+    interp: '448'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    taps: '[]'
+    type: ccc
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [416, 428.0]
+    rotation: 0
+    state: disabled
+- name: rational_resampler_xxx_0_0
+  id: rational_resampler_xxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    decim: '448'
+    fbw: '0'
+    interp: '5'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    taps: '[]'
+    type: ccc
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1216, 388.0]
+    rotation: 0
+    state: disabled
+- name: virtual_sink_0
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: unshifted_lora
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1504, 252.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_1
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: message
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1248, 132.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_0
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: unshifted_lora
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 452.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_1
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: message
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [48, 220.0]
+    rotation: 0
+    state: enabled
+
+connections:
+- [analog_sig_source_x_0, '0', blocks_divide_xx_0, '1']
+- [analog_sig_source_x_0, '0', blocks_multiply_xx_0, '1']
+- [blocks_divide_xx_0, '0', rational_resampler_xxx_0_0, '0']
+- [blocks_message_strobe_0, strobe, epy_block_1, msg_in]
+- [blocks_multiply_xx_0, '0', iio_pluto_sink_0, '0']
+- [epy_block_0, msg_out, blocks_msgpair_to_var_0, inpair]
+- [epy_block_1, msg_out, virtual_sink_1, '0']
+- [iio_pluto_source_0, '0', blocks_divide_xx_0, '0']
+- [iio_pluto_source_0, '0', lora_rx_0, '0']
+- [iio_pluto_source_0, '0', qtgui_waterfall_sink_x_0, '0']
+- [lora_sdr_add_crc_0, '0', lora_sdr_hamming_enc_0, '0']
+- [lora_sdr_gray_demap_0, '0', lora_sdr_modulate_0, '0']
+- [lora_sdr_hamming_enc_0, '0', lora_sdr_interleaver_0, '0']
+- [lora_sdr_header_0, '0', lora_sdr_add_crc_0, '0']
+- [lora_sdr_interleaver_0, '0', lora_sdr_gray_demap_0, '0']
+- [lora_sdr_modulate_0, '0', virtual_sink_0, '0']
+- [lora_sdr_whitening_0, '0', lora_sdr_header_0, '0']
+- [rational_resampler_xxx_0, '0', blocks_multiply_xx_0, '0']
+- [rational_resampler_xxx_0_0, '0', lora_rx_0, '0']
+- [virtual_source_0, '0', iio_pluto_sink_0, '0']
+- [virtual_source_0, '0', rational_resampler_xxx_0, '0']
+- [virtual_source_1, '0', epy_block_0, msg_in]
+- [virtual_source_1, '0', lora_sdr_whitening_0, msg]
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.11.0
