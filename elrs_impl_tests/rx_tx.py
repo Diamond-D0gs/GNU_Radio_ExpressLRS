@@ -1,4 +1,6 @@
+from telemetry import TelemetryReceiver, TelemetrySender
 from OTA import OTA4_PACKET_SIZE, OTA8_PACKET_SIZE
+from ota_base import OTABase, OtaSwitchMode
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from time import time_ns
@@ -60,6 +62,79 @@ class ConnectionState(IntEnum):
     # Failure states that should be displayed immediately.
     radioFailed = 11
     hardwareUndefined = 12
+
+DYNPOWER_SNR_THRESH_NONE = -127
+RF_MODE_CYCLE_MULTIPLIER_SLOW = 10
+RATE_BINDING = ExpressLrsRfRates.RATE_LORA_900_50HZ
+
+EXPRESSLRS_RF_PERF_PARAMS = [
+    {
+        "index": 0,
+        "rx_sensitivity": -112,
+        "toa": 4380,
+        "disconnect_timeout_ms": 3000,
+        "rx_lock_timeout_ms": 2500,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": 1,
+        "dyn_power_snr_thresh_dn": 3.0,
+    },
+    {
+        "index": 1,
+        "rx_sensitivity": -112,
+        "toa": 6690,
+        "disconnect_timeout_ms": 3500,
+        "rx_lock_timeout_ms": 2500,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": 1,
+        "dyn_power_snr_thresh_dn": 3.0,
+    },
+    {
+        "index": 2,
+        "rx_sensitivity": -117,
+        "toa": 8770,
+        "disconnect_timeout_ms": 3500,
+        "rx_lock_timeout_ms": 2500,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": 1,
+        "dyn_power_snr_thresh_dn": 2.5,
+    },
+    {
+        "index": 3,
+        "rx_sensitivity": -120,
+        "toa": 18560,
+        "disconnect_timeout_ms": 4000,
+        "rx_lock_timeout_ms": 2500,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": -1,
+        "dyn_power_snr_thresh_dn": 1.5,
+    },
+    {
+        "index": 4,
+        "rx_sensitivity": -123,
+        "toa": 29950,
+        "disconnect_timeout_ms": 6000,
+        "rx_lock_timeout_ms": 4000,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": -3,
+        "dyn_power_snr_thresh_dn": 0.5,
+    },
+    {
+        "index": 5,
+        "rx_sensitivity": -112,
+        "toa": 4380,
+        "disconnect_timeout_ms": 3000,
+        "rx_lock_timeout_ms": 2500,
+        "sync_pkt_interval_disconnected": 600,
+        "sync_pkt_interval_connected": 5000,
+        "dyn_power_snr_thresh_up": 1,
+        "dyn_power_snr_thresh_dn": 3.0,
+    }
+]
 
 EXPRESSLRS_AIR_RATE_CONFIG = [
     {
@@ -142,10 +217,32 @@ EXPRESSLRS_AIR_RATE_CONFIG = [
     },
 ]
 
-CURR_MODULATION_SETTINGS = None
+RF_PERF_SETTINGS = EXPRESSLRS_RF_PERF_PARAMS[0]
+CURR_RF_PERF_SETTINGS = EXPRESSLRS_RF_PERF_PARAMS[0]
+
+MODULATION_SETTINGS = EXPRESSLRS_AIR_RATE_CONFIG[0]
+CURR_MODULATION_SETTINGS = EXPRESSLRS_AIR_RATE_CONFIG[0]
+
+def get_air_rate_config(index: int) -> dict:
+    if index >= len(EXPRESSLRS_AIR_RATE_CONFIG):
+        return EXPRESSLRS_AIR_RATE_CONFIG[-1]
+    else:
+        return EXPRESSLRS_AIR_RATE_CONFIG[index]
+    
+def get_rf_perf_params(index: int) -> dict:
+    if index >= len(EXPRESSLRS_RF_PERF_PARAMS):
+        return EXPRESSLRS_RF_PERF_PARAMS[-1]
+    else:
+        return EXPRESSLRS_RF_PERF_PARAMS[index]
+
+def enum_rate_to_index(enum_rate: ExpressLrsRfRates) -> int:
+    for i in range(len(EXPRESSLRS_RF_PERF_PARAMS)):
+        if get_air_rate_config(i)['enum_rate'] == enum_rate:
+            return i
+    return (len(EXPRESSLRS_AIR_RATE_CONFIG) - 1) if enum_rate == ExpressLrsRfRates.RATE_LORA_900_25HZ else 0
 
 class RxTxBase(ABC):
-    def __init__(self, binding_method, domain):
+    def __init__(self, binding_method: bytes | str, domain: str, is_rx: bool):
         if isinstance(binding_method, str):
             self.uid = md5(str(f'-DMY_BINDING_PHRASE="{binding_method}"').encode('utf-8')).digest()[:6]
         elif isinstance(binding_method, bytes):
@@ -157,6 +254,7 @@ class RxTxBase(ABC):
             raise TypeError('\'binding_method\' must be binding phrase str or UID bytes')
         
         self.radio = Radio()
+        self.ota = OTABase(is_rx)
         self.fhss_handler = FHSSHandler(domain, self._uid_mac_seed_get())
         self.connection_state = ConnectionState.connected
         self.next_air_rate_index = 0
@@ -165,6 +263,8 @@ class RxTxBase(ABC):
         self.already_fhss = False
         self.in_binding_mode = False
         self.invert_IQ = False
+        self.last_sync_packet = 0
+        self.rf_mode_last_cycled = 0
 
     def _uid_mac_seed_get(self) -> int:
         return ((self.uid[2] << 24) + (self.uid[3] << 16) + (self.uid[4] << 8) + (self.uid[5] ^ OTA_VERSION_ID)) & 0xFFFFFFFF
@@ -175,22 +275,52 @@ class RxTxBase(ABC):
 
 class Receiver(RxTxBase):
     def __init__(self, binding_method, domain):
-        super().__init__(binding_method, domain)
+        super().__init__(binding_method, domain, True)
+        self.telemetry_sender = TelemetrySender()
+        self.telem_burst_valid = False
         self.binding_mode = False
+        self.cycle_interval = 0
+        self.lock_rf_mode = False
+        self.rf_mode_cycle_multiplier = 0
+        self.scan_index = 0
 
-    def _set_rf_link_rate(self, index, bind_mode) -> None:
-        CURR_MODULATION_SETTINGS = EXPRESSLRS_AIR_RATE_CONFIG[index]
+    def _set_rf_link_rate(self, index: int, bind_mode: bool) -> None:
+        MODULATION_SETTINGS = EXPRESSLRS_AIR_RATE_CONFIG[index]
+        RF_PERF_SETTINGS = EXPRESSLRS_RF_PERF_PARAMS[index]
+
         invert_IQ = bind_mode or self.uid[5] & 0x01
-        self.radio.config(CURR_MODULATION_SETTINGS['bw'], CURR_MODULATION_SETTINGS['sf'], CURR_MODULATION_SETTINGS['cr'], self.fhss_handler.fhss_sequence[0], CURR_MODULATION_SETTINGS['preamble_len'], invert_IQ, CURR_MODULATION_SETTINGS['payload_len'])
 
-    def _lost_conection(self, resume_rx) -> None:
+        self.radio.config(MODULATION_SETTINGS['bw'], MODULATION_SETTINGS['sf'], MODULATION_SETTINGS['cr'], self.fhss_handler.fhss_sequence[0], MODULATION_SETTINGS['preamble_len'], invert_IQ, MODULATION_SETTINGS['payload_len'])
+
+        self.ota.update_serializers(OtaSwitchMode.smWideOr8ch, MODULATION_SETTINGS['payload_length'])
+
+        self.cycle_interval = 11 * self.fhss_handler.primary_band_count * MODULATION_SETTINGS['fhss_hop_interval'] * MODULATION_SETTINGS['interval'] // 10_000
+
+        CURR_MODULATION_SETTINGS = MODULATION_SETTINGS
+        CURR_RF_PERF_SETTINGS = RF_PERF_SETTINGS
+
+        self.next_air_rate_index = index
+        self.telem_burst_valid = False
+
+    def _lost_conection(self) -> None:
         self.connection_state = ConnectionState.disconnected
         self.got_connection_millis = 0
         self.already_fhss = False
         
         if self.in_binding_mode:
-            pass
+            self._set_rf_link_rate(self.next_air_rate_index, False)
 
+    def _cycle_rf_mode(self, now: int) -> None:
+        if self.connection_state == ConnectionState.connected or self.in_binding_mode:
+            return
+        
+        if self.lock_rf_mode == False and (now - self.rf_mode_last_cycled) > (self.cycle_interval * self.rf_mode_cycle_multiplier):
+            self.rf_mode_last_cycled = now
+            self.last_sync_packet = now
+            #self._set_rf_link_rate()
+
+    def _setup_radio(self) -> None:
+        self.radio.update_frequency(self.fhss_handler.fhss_sequence[0])
 
     def run(self):
         now = time_ns()
@@ -198,12 +328,20 @@ class Receiver(RxTxBase):
         # Pull data from somewhere
 
         if self.connection_state != ConnectionState.disconnected and CURR_MODULATION_SETTINGS['index'] != self.next_air_rate_index:
-            pass
+            self._lost_conection()
+            self.last_sync_packet = now
+            
+        if self.connection_state == ConnectionState.tentative and (now - self.last_sync_packet) > CURR_RF_PERF_SETTINGS['rx_lock_timeout_ms']:
+            self._lost_conection()
+            self.rf_mode_last_cycled = now
+            self.last_sync_packet = now
 
+        
+            
 
 class Transmitter(RxTxBase):
     def __init__(self, binding_method, domain):
-        super().__init__(binding_method, domain)
+        super().__init__(binding_method, domain, False)
 
     def run(self):
         return

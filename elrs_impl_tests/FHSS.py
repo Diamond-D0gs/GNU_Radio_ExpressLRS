@@ -19,7 +19,7 @@ class fhss_random:
         self._seed = ((214013 * self._seed + 2531011) % 2147483648) & 0xFFFFFFFF
         return self._seed >> 16
     
-    def update_seed(self, new_seed) -> int:
+    def update_seed(self, new_seed) -> None:
         self._seed = new_seed
 
     def rng_n(self, max) -> int:
@@ -45,15 +45,15 @@ class FHSSHandler:
         else:
             raise TypeError(f'\'seed\' must be of type int')
 
-        fhss_config = fhss_domain_configs[domain]
+        self.fhss_config = fhss_domain_configs[domain]
         
-        self.sync_channel = int(fhss_config[2] // 2)
-        self.freq_spread = int((fhss_config[1] - fhss_config[0]) // (fhss_config[2] - 1))
-        self.primary_band_count = int((FHSS_SEQUENCE_LEN // fhss_config[2]) * fhss_config[2])
+        self.sync_channel = int(self.fhss_config[2] // 2)
+        self.freq_spread = int((self.fhss_config[1] - self.fhss_config[0]) // (self.fhss_config[2] - 1))
+        self.primary_band_count = int((FHSS_SEQUENCE_LEN // self.fhss_config[2]) * self.fhss_config[2])
 
         self.fhss_ptr = 0
         self.fhss_sequence = []
-        self._build_randomized_fhss_sequence(seed, fhss_config)
+        self._build_randomized_fhss_sequence(seed, self.fhss_config)
 
     def _build_randomized_fhss_sequence(self, seed, fhss_config):
         for i in range(self.primary_band_count):
@@ -72,3 +72,12 @@ class FHSSHandler:
                 rand = rng.rng_n(fhss_config[2] - i) + 1
                 offset = (i // fhss_config[2]) * fhss_config[2]
                 self.fhss_sequence[i], self.fhss_sequence[offset + rand] = self.fhss_sequence[offset + rand], self.fhss_sequence[i]
+
+    def get_initial_freq(self) -> int:
+        return self.fhss_sequence[0]
+    
+    def get_minimum_freq(self) -> int:
+        return self.fhss_config[0]
+    
+    def get_maximum_freq(self) -> int:
+        return self.fhss_config[1]

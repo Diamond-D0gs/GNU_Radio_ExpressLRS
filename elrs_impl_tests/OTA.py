@@ -7,8 +7,12 @@ import ctypes
 # (e.g., msp_ul payload is 1 byte for index + 5 bytes for data = 6 bytes total)
 ELRS4_MSP_BYTES_PER_CALL = 5
 ELRS4_TELEMETRY_BYTES_PER_CALL = 5
+ELRS4_TELEMETRY_SHIFT = 2
+ELRS4_TELEMETRY_MAX_PACKAGES = 255 >> ELRS4_TELEMETRY_SHIFT
 ELRS8_MSP_BYTES_PER_CALL = 10
 ELRS8_TELEMETRY_BYTES_PER_CALL = 10
+ELRS8_TELEMETRY_SHIFT = 3
+ELRS8_TELEMETRY_MAX_PACKAGES = 255 >> ELRS8_TELEMETRY_SHIFT
 
 # Value is implicit leading 1, comment is Koopman formatting (implicit trailing 1) https://users.ece.cmu.edu/~koopman/crc/
 ELRS_CRC_POLY = 0x07 # 0x83

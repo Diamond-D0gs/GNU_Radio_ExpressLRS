@@ -3,6 +3,7 @@ from OTA import OTA8_PACKET_SIZE, OTA8_CRC_CALC_LEN, OTA4_PACKET_SIZE, OTA4_CRC_
 from rx_tx import OTA_VERSION_ID, CURR_MODULATION_SETTINGS
 from abc import ABC, abstractmethod
 from crc_2_byte import Crc2Byte
+from typing import Optional
 from enum import IntEnum
 
 PACKET_TYPE_DATA = 0b01
@@ -15,8 +16,8 @@ class OtaSwitchMode(IntEnum):
     smHybridOr16ch = 1
     sm12ch = 2
 
-def pack_uint11_to_channels_4x10(src: list, use_limit: bool) -> OTA_Channels_4x10:
-    output = bytes(5)
+def pack_uint11_to_channels_4x10(src: list, use_limit: bool = False) -> OTA_Channels_4x10:
+    output = list()
 
     dest_shift = 0
     curr_index = 0
@@ -31,7 +32,7 @@ def pack_uint11_to_channels_4x10(src: list, use_limit: bool) -> OTA_Channels_4x1
         output[curr_index] = ch_val >> (10 - src_bits_left)
         dest_shift = src_bits_left
 
-    return OTA_Channels_4x10.from_buffer(output)
+    return OTA_Channels_4x10.from_buffer(bytes(output))
 
 def pack_channel_data_hydrid_common(channel_data: list) -> OTA_Packet4_s:
     ota4 = OTA_Packet4_s()
@@ -79,12 +80,12 @@ def hybrid_wide_switch_to_ota(channel_data: list, switch_index: int, low_res: bo
 def hybrid_wide_nonce_to_switch_index(nonce: int) -> int:
     return ((nonce & 0b111) + (nonce >> 3) & 0b1) % 8
 
-class ota_base(ABC):
+class OTABase(ABC):
     def __init__(self, is_rx: bool):
         self.nonce = 0
         self.crc_init = 0
         self.is_rx = is_rx
-        self.crc: Crc2Byte = None
+        self.crc: Optional[Crc2Byte] = None
         self.is_full_res = False
         self.is_high_aux = False
         self.curr_switch_mode = 0
@@ -93,22 +94,25 @@ class ota_base(ABC):
         self.is_armed = False
 
     def update_crc_init_from_uid(self, uid: bytes):
-        if len(bytes) != 6:
+        if len(uid) != 6:
             raise ValueError('\'bytes\' must have length of 6.')
         else:
             self.crc_init = ((uid[4] << 8) | uid[5]) ^ OTA_VERSION_ID
 
     def update_serializers(self, switch_mode: OtaSwitchMode, packet_size: int):
         self.is_full_res = packet_size == OTA8_PACKET_SIZE
-        self.crc = self.crc = Crc2Byte(16, ELRS_CRC16_POLY) if self.is_full_res else self.crc = Crc2Byte(14, ELRS_CRC14_POLY)
+        self.crc = Crc2Byte(16, ELRS_CRC16_POLY) if self.is_full_res else Crc2Byte(14, ELRS_CRC14_POLY)
         self.curr_switch_mode = switch_mode
         self.hybrid_8_next_switch_index = 0
         self.telemetry_status = False
         self.is_armed = False
 
     def validate_packet_crc(self, ota_packet: OTA_Packet4_s | OTA_Packet8_s) -> bool:
+        if self.crc is None:
+            raise TypeError('\'crc\' members is of type None, OTA has likely not been configured.')
+        
         if self.is_full_res and isinstance(ota_packet, OTA_Packet8_s):
-            return self.crc.calc(bytes(ota_packet), OTA8_CRC_CALC_LEN, self.crc_init)
+            return self.crc.calc(bytes(ota_packet), self.crc_init) == OTA_Packet8_s(ota_packet).crc
         elif isinstance(ota_packet, OTA_Packet4_s):
             backup_crc_high = ota_packet.crcHigh
             in_crc = (ota_packet.crcHigh << 8) + ota_packet.crcLow
@@ -118,25 +122,33 @@ class ota_base(ABC):
             else:
                 ota_packet.crcHigh = 0
 
-            calced_crc = self.crc.calc(bytes(ota_packet), OTA4_CRC_CALC_LEN, self.crc_init)
+            calced_crc = self.crc.calc(bytes(ota_packet), self.crc_init)
             ota_packet.crcHigh = backup_crc_high
 
             return in_crc == calced_crc
         else:
             raise TypeError('\'ota_packet\' must be OTA_Packet4_s or OTA_Packet8_s.')
         
-    def generate_packet_crc(self, ota_packet: OTA_Packet4_s | OTA_Packet8_s) -> None:
+    def generate_packet_crc(self, ota_packet: OTA_Packet4_s | OTA_Packet8_s) -> list:
+        if self.crc is None:
+            raise TypeError('\'crc\' members is of type None, OTA has likely not been configured.')
+
+        output = list()
+
         if self.is_full_res and isinstance(ota_packet, OTA_Packet8_s):
-            return self.crc.calc(bytes(ota_packet), OTA8_CRC_CALC_LEN, self.crc_init)
+            output.append(self.crc.calc(bytes(ota_packet), self.crc_init))
         elif isinstance(ota_packet, OTA_Packet4_s):
             if self.is_rx and ota_packet.type == PACKET_TYPE_RCDATA and self.curr_switch_mode == OtaSwitchMode.smWideOr8ch:
                 ota_packet.crcHigh = (self.nonce % CURR_MODULATION_SETTINGS['fhss_hop_interval']) + 1
 
-            crc = self.crc.calc(bytes(ota_packet), OTA4_CRC_CALC_LEN, self.crc_init)
-            ota_packet.crcHigh = (crc >> 8) & 0xFF
-            ota_packet.crcLow = crc & 0xFF
+            crc = self.crc.calc(bytes(ota_packet), self.crc_init)
+
+            output.append((crc >> 8) & 0xFF)
+            output.append(crc & 0xFF)
         else:
             raise TypeError('\'ota_packet\' must be OTA_Packet4_s or OTA_Packet8_s.')
+        
+        return output
 
     def generate_channel_data(self, channel_data: list, telemetry_status: bool, tlm_denom: int) -> OTA_Packet4_s | OTA_Packet8_s:
         if self.is_full_res:
