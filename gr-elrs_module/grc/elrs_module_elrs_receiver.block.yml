@@ -1,0 +1,39 @@
+id: elrs_module_elrs_receiver
+label: elrs_receiver
+category: '[elrs_module]'
+
+templates:
+  imports: from gnuradio import elrs_module
+  make: elrs_module.elrs_receiver(${domain}, ${packet_rate}, ${binding_phrase})
+
+parameters:
+- id: domain
+  label: Domain
+  dtype: string
+  default: '"FCC915"'
+  options: ['"AU915"', '"FCC915"', '"EU868"', '"IN866"', '"AU433"', '"EU433"', '"US433"', '"US433W"', '"ISM2G4"']
+  option_labels: ['AU915', 'FCC915', 'EU868', 'IN866', 'AU433', 'EU433', 'US433', 'US433W', 'ISM2G4']
+
+- id: packet_rate
+  label: Packet Rate (Hz)
+  dtype: int
+  default: 25
+  options: [25, 50, 100, 150, 200, 250, 333, 500, 1000]
+  option_labels: ['25 Hz', '50 Hz', '100 Hz', '150 Hz', '200 Hz', '250 Hz', '333 Hz', '500 Hz', '1000 Hz']
+
+- id: binding_phrase
+  label: Binding Phrase
+  dtype: string
+  default: '"DefaultBindingPhrase"'
+
+inputs:
+- label: 'input'
+  domain: stream
+  dtype: complex
+
+outputs:
+- label: 'output'
+  domain: stream
+  dtype: complex
+
+file_format: 1
