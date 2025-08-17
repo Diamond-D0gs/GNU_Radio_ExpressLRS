@@ -1,12 +1,15 @@
+from fhss_random import FHSSRandom
+from misc import uid_mac_seed_get
+
 class FHSSHandler:
-    def __init__(self, uid: bytes, domain_settings: dict[str, dict[str, int]]):
+    def __init__(self, uid: bytes, domain_settings: dict[str, int]):
         self.sync_channel = domain_settings['freq_count'] // 2
         self.freq_range = domain_settings['stop_freq'] - domain_settings['start_freq']
         self.freq_spread = self.freq_range // (domain_settings['freq_count'] - 1)
         self.band_count = (256 // domain_settings['freq_count']) * domain_settings['freq_count']
-        self.rand = FHSSRandom(uid_mac_seed_get(uid))
-        self.config = domain_settings
-
+        
+        self._rand = FHSSRandom(uid_mac_seed_get(uid))
+        self._config = domain_settings
         self._frequencies = list()
         self._index = 0
 
@@ -21,11 +24,11 @@ class FHSSHandler:
         for i in range(self.band_count):
             if i % domain_settings['freq_count'] != 0:
                 offset = (i // domain_settings['freq_count']) * domain_settings['freq_count']
-                rand = self.rand.rng_n(domain_settings['freq_count'] - 1) + 1
+                rand = self._rand.rng_n(domain_settings['freq_count'] - 1) + 1
                 self._frequencies[i], self._frequencies[offset + rand] = self._frequencies[offset + rand], self._frequencies[i]
 
     def get_init_freq(self) -> int:
-        return self.config['start_freq'] + (self.sync_channel * self.freq_spread)
+        return self._config['start_freq'] + (self.sync_channel * self.freq_spread)
     
     def get_curr_index(self) -> int:
         return self._index

@@ -6,6 +6,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-install(FILESd
+install(FILES
     elrs_module_elrs_receiver.block.yml DESTINATION share/gnuradio/grc/blocks
 )
