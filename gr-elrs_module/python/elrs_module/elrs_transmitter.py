@@ -22,31 +22,7 @@ from gnuradio import lora_sdr # type: ignore
 from gnuradio import gr, analog, blocks, filter
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
-
-class proxy_block(gr.sync_block):
-    def __init__(self, msg_handler):
-        gr.sync_block.__init__(
-            self,
-            name="Callable Message Sink",
-            in_sig=None,  # No streaming input
-            out_sig=None  # No streaming output
-        )
-        
-        self.message_port_register_in(pmt.intern('in')) # type: ignore
-        self.message_port_register_in(pmt.intern('forward')) # type: ignore
-        self.message_port_register_out(pmt.intern('out')) # type: ignore
-
-        self.set_msg_handler(pmt.intern('in'), msg_handler) # type: ignore
-        self.set_msg_handler(pmt.intern('forward'), self._forward_msg) # type: ignore
-
-    def _forward_msg(self, msg):
-        self.message_port_pub(pmt.intern('out'), msg) # type: ignore
-
-    def post(self, msg):
-        self.message_port_pub(pmt.intern('out'), msg) # type: ignore
-
-    def work(self, input_items, output_items):
-        return 0
+from ._proxy_block import proxy_block
 
 class elrs_transmitter(gr.hier_block2):
     """
@@ -147,7 +123,8 @@ class elrs_transmitter(gr.hier_block2):
 
         self._proxy_block = proxy_block(self._lora_rx_msg_handler)
         self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
-        self._divider = blocks.multiply_vcc(vlen=1) # type: ignore
+        #self._divider = blocks.multiply_vcc(vlen=1) # type: ignore
+        self._divider = blocks.divide_cc(vlen=1) # type: ignore
         self._conjugate = blocks.conjugate_cc() # type: ignore
 
         # self.message_port_register_out(pmt.intern('freq_center')) # type: ignore
@@ -157,8 +134,7 @@ class elrs_transmitter(gr.hier_block2):
         self.msg_connect((self._lora_rx, 'out'), (self._proxy_block, 'in'))
 
         self.connect((self, 0), (self._divider, 0))
-        self.connect(self._shift_signal_gen, self._conjugate)
-        self.connect(self._conjugate, (self._divider, 1))
+        self.connect(self._shift_signal_gen, (self._divider, 1))
         self.connect(self._divider, (self._lora_rx, 0))
 
         self.connect((self._lora_tx, 0), (self._multiplier, 0))
@@ -195,6 +171,7 @@ class elrs_transmitter(gr.hier_block2):
                             ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
                             ota_packet4_s.type = PACKET_TYPE_SYNC
 
+                            print(backing_bytes.decode('latin-1'))
                             self._proxy_block.post(pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
                     
                             print('ELRS TX: Sent sync packet.')

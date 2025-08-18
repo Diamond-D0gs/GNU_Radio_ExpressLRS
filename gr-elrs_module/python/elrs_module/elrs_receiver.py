@@ -22,7 +22,7 @@ from gnuradio import lora_sdr # type: ignore
 from gnuradio import gr, analog, blocks, filter
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
-from .elrs_transmitter import proxy_block
+from ._proxy_block import proxy_block
 
 class elrs_receiver(gr.hier_block2):
     """
@@ -123,7 +123,8 @@ class elrs_receiver(gr.hier_block2):
 
         self._proxy_block = proxy_block(self._lora_rx_msg_handler)
         self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
-        self._divider = blocks.multiply_vcc(vlen=1) # type: ignore
+        #self._divider = blocks.multiply_vcc(vlen=1) # type: ignore
+        self._divider = blocks.divide_cc(vlen=1) # type: ignore
         self._conjugate = blocks.conjugate_cc() # type: ignore
 
         # self.message_port_register_out(pmt.intern('freq_center')) # type: ignore
@@ -133,8 +134,7 @@ class elrs_receiver(gr.hier_block2):
         self.msg_connect((self._lora_rx, 'out'), (self._proxy_block, 'in'))
 
         self.connect((self, 0), (self._divider, 0))
-        self.connect(self._shift_signal_gen, self._conjugate)
-        self.connect(self._conjugate, (self._divider, 1))
+        self.connect(self._shift_signal_gen, (self._divider, 1))
         self.connect(self._divider, (self._lora_rx, 0))
 
         self.connect((self._lora_tx, 0), (self._multiplier, 0))

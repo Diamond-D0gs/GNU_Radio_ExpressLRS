@@ -121,7 +121,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [248, 136.0]
+    coordinate: [152, 168.0]
     rotation: 0
     state: true
 - name: elrs_module_elrs_receiver_0
@@ -139,7 +139,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [720, 124.0]
+    coordinate: [712, 148.0]
     rotation: 0
     state: true
 - name: elrs_module_elrs_transmitter_0
@@ -157,7 +157,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [448, 124.0]
+    coordinate: [400, 148.0]
     rotation: 0
     state: true
 - name: epy_block_0
@@ -356,9 +356,70 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [728, 236.0]
+    coordinate: [712, 236.0]
     rotation: 0
-    state: true
+    state: disabled
+- name: qtgui_waterfall_sink_x_0
+  id: qtgui_waterfall_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    axislabels: 'True'
+    bw: 926900000 - 903500000
+    color1: '0'
+    color10: '0'
+    color2: '0'
+    color3: '0'
+    color4: '0'
+    color5: '0'
+    color6: '0'
+    color7: '0'
+    color8: '0'
+    color9: '0'
+    comment: ''
+    fc: '915000000'
+    fftsize: '512'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    int_max: '0'
+    int_min: '-140'
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '""'
+    nconnections: '1'
+    showports: 'False'
+    type: complex
+    update_time: '0.001'
+    wintype: window.WIN_HAMMING
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [720, 332.0]
+    rotation: 0
+    state: disabled
 
 connections:
 - [blocks_message_strobe_0, strobe, epy_block_0, trigger]
@@ -366,6 +427,7 @@ connections:
 - [elrs_module_elrs_receiver_0, '0', blocks_null_sink_0, '0']
 - [elrs_module_elrs_transmitter_0, '0', elrs_module_elrs_receiver_0, '0']
 - [elrs_module_elrs_transmitter_0, '0', qtgui_time_sink_x_0, '0']
+- [elrs_module_elrs_transmitter_0, '0', qtgui_waterfall_sink_x_0, '0']
 - [epy_block_0, set_period, blocks_msgpair_to_var_0, inpair]
 
 metadata:
