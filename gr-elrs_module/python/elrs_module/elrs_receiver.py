@@ -95,23 +95,23 @@ class elrs_receiver(gr.hier_block2):
 
         lora_rx_params = {
             'center_freq' : 0,
-            'print_rx' : [True, True],
+            'print_rx' : [False, False],
             'has_crc' : False, # ExpressLRS utilizes its own CRC.
-            'impl_head' : False, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
+            'impl_head' : True, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
             'bw' : self._additional_settings['bandwidth'],
             'cr' : self._additional_settings['coding_rate'],
             'sf' : self._additional_settings['spread_factor'],
             'samp_rate' : self._additional_settings['bandwidth'] * 2,
-            #'pay_len' : OTA4_PACKET_SIZE,
+            'pay_len' : OTA4_PACKET_SIZE,
             'ldro_mode' : 0
         }
- 
+
         self._lora_rx = lora_sdr.lora_sdr_lora_rx(**lora_rx_params)
 
         lora_tx_params = {
             # 'frame_zero_padd' : 0,
             'has_crc' : False, # ExpressLRS utilizes its own CRC.
-            'impl_head' : False, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
+            'impl_head' : True, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
             'bw' : self._additional_settings['bandwidth'],
             'cr' : self._additional_settings['coding_rate'],
             'sf' : self._additional_settings['spread_factor'],
@@ -132,16 +132,14 @@ class elrs_receiver(gr.hier_block2):
         self.msg_connect((self._proxy_block, 'out'), (self._lora_tx, 'in'))
         self.msg_connect((self._lora_rx, 'out'), (self._proxy_block, 'in'))
 
-        # self.connect((self, 0), (self._divider, 0))
-        # self.connect(self._shift_signal_gen, self._conjugate)
-        # self.connect(self._conjugate, (self._divider, 1))
-        # self.connect(self._divider, (self._lora_rx, 0))
-        self.connect((self, 0), (self._lora_rx, 0))
+        self.connect((self, 0), (self._divider, 0))
+        self.connect(self._shift_signal_gen, self._conjugate)
+        self.connect(self._conjugate, (self._divider, 1))
+        self.connect(self._divider, (self._lora_rx, 0))
 
-        # self.connect((self._lora_tx, 0), (self._multiplier, 0))
-        # self.connect(self._shift_signal_gen, (self._multiplier, 1))
-        # self.connect(self._multiplier, (self, 0))
-        self.connect((self._lora_tx, 0), (self, 0))
+        self.connect((self._lora_tx, 0), (self._multiplier, 0))
+        self.connect(self._shift_signal_gen, (self._multiplier, 1))
+        self.connect(self._multiplier, (self, 0))
 
         self._thread.start()
 
