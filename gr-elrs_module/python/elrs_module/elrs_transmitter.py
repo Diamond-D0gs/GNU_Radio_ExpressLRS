@@ -22,15 +22,39 @@ from gnuradio import lora_sdr # type: ignore
 from gnuradio import gr, analog, blocks, filter
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
-from .elrs_transmitter import proxy_block
 
-class elrs_receiver(gr.hier_block2):
+class proxy_block(gr.sync_block):
+    def __init__(self, msg_handler):
+        gr.sync_block.__init__(
+            self,
+            name="Callable Message Sink",
+            in_sig=None,  # No streaming input
+            out_sig=None  # No streaming output
+        )
+        
+        self.message_port_register_in(pmt.intern('in')) # type: ignore
+        self.message_port_register_in(pmt.intern('forward')) # type: ignore
+        self.message_port_register_out(pmt.intern('out')) # type: ignore
+
+        self.set_msg_handler(pmt.intern('in'), msg_handler) # type: ignore
+        self.set_msg_handler(pmt.intern('forward'), self._forward_msg) # type: ignore
+
+    def _forward_msg(self, msg):
+        self.message_port_pub(pmt.intern('out'), msg) # type: ignore
+
+    def post(self, msg):
+        self.message_port_pub(pmt.intern('out'), msg) # type: ignore
+
+    def work(self, input_items, output_items):
+        return 0
+
+class elrs_transmitter(gr.hier_block2):
     """
-    docstring for block elrs_receiver
+    docstring for block elrs_transmitter
     """
     def __init__(self, domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase"):
         gr.hier_block2.__init__(self,
-            name="elrs_receiver",
+            name="elrs_transmitter",
             input_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize), # type: ignore
             output_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize)) # type: ignore
         
@@ -53,7 +77,7 @@ class elrs_receiver(gr.hier_block2):
         self._thread = Thread(target=self._thread_loop)
         self._thread.daemon = True
         self._stop_thread = False
-        self._sync_pkt_recv = False
+        self._sync_confirmed = False
         self._packet_counter = 0
         self._tlm_pkt_send_cnt = 0
         self._telemetry_file: None | typing.TextIO = None
@@ -95,7 +119,7 @@ class elrs_receiver(gr.hier_block2):
 
         lora_rx_params = {
             'center_freq' : 0,
-            'print_rx' : [True, True],
+            'print_rx' : [False, False],
             'has_crc' : False, # ExpressLRS utilizes its own CRC.
             'impl_head' : False, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
             'bw' : self._additional_settings['bandwidth'],
@@ -105,7 +129,7 @@ class elrs_receiver(gr.hier_block2):
             #'pay_len' : OTA4_PACKET_SIZE,
             'ldro_mode' : 0
         }
- 
+
         self._lora_rx = lora_sdr.lora_sdr_lora_rx(**lora_rx_params)
 
         lora_tx_params = {
@@ -154,61 +178,53 @@ class elrs_receiver(gr.hier_block2):
                     self._updated_connection_state = False
                     match self._connection_state:
                         case ConnectionState.NO_CONNECTION:
-                            print('ELRS RX: Connection state has updated to "NO_CONNECTION"')
+                            print('ELRS TX: Connection state has updated to "NO_CONNECTION"')
                         case ConnectionState.ESTABLISHING_CONNECTION:
-                            print('ELRS RX: Connection state has updated to "ESTABLISHING_CONNECTION"')
+                            print('ELRS TX: Connection state has updated to "ESTABLISHING_CONNECTION"')
                         case ConnectionState.CONNECTED:
-                            print('ELRS RX: Connection state has updated to "CONNECTED"')
+                            print('ELRS TX: Connection state has updated to "CONNECTED"')
                         case _:
-                            print('ELRS RX: Unknown connection state.')
+                            print('ELRS TX: Unknown connection state.')
 
                 match self._connection_state:
                     case ConnectionState.NO_CONNECTION:
-                        if self._sync_pkt_recv:
-                            self._connection_state = ConnectionState.ESTABLISHING_CONNECTION
+                        if self._sync_confirmed:
+                            self._connection_state = ConnectionState.CONNECTED
                             self._updated_connection_state = True
-                            self._sync_pkt_recv = False
+                            self._sync_confirmed = False
+                        else:
+                            backing_bytes = bytearray(OTA4_PACKET_SIZE)
+                            ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
+                            ota_packet4_s.type = PACKET_TYPE_SYNC
+
+                            self._proxy_block.post(pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
+                    
+                            print('ELRS TX: Sent sync packet.')
                     case ConnectionState.ESTABLISHING_CONNECTION:
+                        pass
+                    case ConnectionState.CONNECTED:
                         backing_bytes = bytearray(OTA4_PACKET_SIZE)
                         ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
-                        ota_packet4_s.type = PACKET_TYPE_LINKSTATS
+                        ota_packet4_s.type = PACKET_TYPE_RCDATA
+                        ota_packet4_s.rc.ch[:] = self._packet_counter.to_bytes(5, 'little')
 
                         self._proxy_block.post(pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
-
-                        self._fhss_handler.set_curr_index(0)
-                        self._connection_state = ConnectionState.CONNECTED
-                        self._updated_connection_state = True
-                    case ConnectionState.CONNECTED:
-                        if self._sync_pkt_recv:
-                            self._sync_pkt_recv = False
 
             delta_time = time.time() - start_time
             if delta_time <= self._packet_time:
                 time.sleep(self._packet_time - delta_time)
             else:
-                print('ELRS RX: Warning! Packet time exceeded!')
+                print('ELRS TX: Warning! Packet time exceeded!')
 
     def _lora_rx_msg_handler(self, msg) -> None:
-        print('Entered ELRS RX msg handler')
         temp : str = pmt.symbol_to_string(msg) if pmt.is_symbol(msg) else pmt.string_to_string(msg) # type: ignore
         ota4 = OTA_Packet4_s.from_buffer(temp.encode('latin-1')) # type: ignore
-        if ota4.type == PACKET_TYPE_SYNC:
+        if ota4.type == PACKET_TYPE_LINKSTATS:
             with self._lock:
-                self._sync_pkt_recv = True
-                self._packet_counter += 1
-        elif ota4.type == PACKET_TYPE_RCDATA:
-            packet_num = int.from_bytes(bytes(ota4.rc.ch), 'little')
-            print(f'Packet: {packet_num}')
-            with self._lock:
-                self._packet_counter += 1
-
-        # Not sending telemetry packets currently.
-        # if self._packet_counter % self._additional_settings['tlm_ratio'] == 0:
-        #     backing_bytes = bytearray(OTA4_PACKET_SIZE)
-        #     ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
-        #     ota_packet4_s.type = PACKET_TYPE_LINKSTATS
-        #     if self._telemetry_file is not None:
-        #         ota_packet4_s.tlm_dl.payload[0 : ELRS4_TELEMETRY_BYTES_PER_CALL - 1] = int(self._telemetry_file.readline(), 16).to_bytes(4, 'little')
-
-        #     pdu = pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(backing_bytes), backing_bytes))  # type: ignore
-        #     self.message_port_post(pmt.intern('internal_tx_pdu'), pdu) # type: ignore
+                self._sync_confirmed = True
+                #self._packet_counter += 1
+        # elif ota4.type == PACKET_TYPE_RCDATA:
+        #     packet_num = int.from_bytes(bytes(ota4.rc.ch), 'little')
+        #     print(f'Packet: {packet_num}')
+        #     with self._lock:
+        #         self._packet_counter += 1

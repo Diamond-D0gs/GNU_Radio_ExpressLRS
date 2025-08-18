@@ -1,5 +1,4 @@
 import ctypes
-from enum import IntEnum
 
 # --- Constants from ExpressLRS Source ---
 # NOTE: These values are derived from the ExpressLRS source for 4-byte headers.

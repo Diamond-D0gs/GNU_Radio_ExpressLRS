@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-from misc import uid_mac_seed_get, OTA_VERSION_ID, PACKET_RATE_LIMIT
+from .misc import uid_mac_seed_get, OTA_VERSION_ID, PACKET_RATE_LIMIT
 from gnuradio import gr
 from hashlib import md5
 import pmt

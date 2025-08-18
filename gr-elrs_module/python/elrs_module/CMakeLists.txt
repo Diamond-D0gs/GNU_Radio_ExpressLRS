@@ -27,7 +27,7 @@ file(GLOB PY_FILES "*.py")
 GR_PYTHON_INSTALL(
     FILES
     ${PY_FILES}
-    elrs_receiver.py DESTINATION ${GR_PYTHON_DIR}/gnuradio/elrs_module
+    DESTINATION ${GR_PYTHON_DIR}/gnuradio/elrs_module
 )
 
 ########################################################################

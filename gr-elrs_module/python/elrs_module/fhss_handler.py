@@ -1,5 +1,5 @@
-from fhss_random import FHSSRandom
-from misc import uid_mac_seed_get
+from .fhss_random import FHSSRandom
+from .misc import uid_mac_seed_get
 
 class FHSSHandler:
     def __init__(self, uid: bytes, domain_settings: dict[str, int]):

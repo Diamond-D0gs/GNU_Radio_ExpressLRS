@@ -92,10 +92,10 @@ class FHSSRandom:
         return self.rng() & 0xFF
     
     def rng_5_bit(self) -> int:
-        return self.rng & 0x1F
+        return self.rng() & 0x1F
 
 class FHSSHandler:
-    def __init__(self, uid: bytes, domain_settings: dict[str, dict[str, int]]):
+    def __init__(self, uid: bytes, domain_settings: dict[str, int]):
         self.sync_channel = domain_settings['freq_count'] // 2
         self.freq_range = domain_settings['stop_freq'] - domain_settings['start_freq']
         self.freq_spread = self.freq_range // (domain_settings['freq_count'] - 1)

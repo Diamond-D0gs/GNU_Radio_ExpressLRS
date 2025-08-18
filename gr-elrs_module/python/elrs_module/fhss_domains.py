@@ -1,7 +1,6 @@
-from packet_rates import PACKET_RATES
+from .packet_rates import PACKET_RATES
 
 FHSS_DOMAINS = {
-
     "AU915" : {
         "start_freq"  : 915500000,
         "stop_freq"    : 926900000,

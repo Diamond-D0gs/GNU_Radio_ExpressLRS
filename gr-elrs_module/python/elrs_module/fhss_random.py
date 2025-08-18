@@ -15,4 +15,4 @@ class FHSSRandom:
         return self.rng() & 0xFF
     
     def rng_5_bit(self) -> int:
-        return self.rng & 0x1F
+        return self.rng() & 0x1F
