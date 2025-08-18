@@ -65,6 +65,8 @@ def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
         raise ValueError('Invalid packet rate!')
     
     output = {}
+    output['sync_pkt_connected'] = 5000
+    output['sync_pkt_disconnected'] = 600
     if domain != "ISM2G4":
         output['coding_rate'] = 3
         output['bandwidth'] = 500_000
@@ -75,25 +77,25 @@ def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
                 output['preamble_len'] = 10
                 output['tlm_ratio'] = 8
                 output['fhss_hop_interval'] = 2
-                output['payload_length'] = 40000
+                output['interval_us'] = 40000
             case 50:
                 output['spread_factor'] = 8
                 output['preamble_len'] = 10
                 output['tlm_ratio'] = 16
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 20000
+                output['interval_us'] = 20000
             case 100:
                 output['spread_factor'] = 7
                 output['preamble_len'] = 8
                 output['tlm_ratio'] = 32
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 10000
+                output['interval_us'] = 10000
             case 200:
                 output['spread_factor'] = 6
                 output['preamble_len'] = 8
                 output['tlm_ratio'] = 64
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 5000
+                output['interval_us'] = 5000
             case _:
                 return { 'valid' : False }
     else:
@@ -106,28 +108,28 @@ def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
                 output['preamble_len'] = 12
                 output['tlm_ratio'] = 128
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 2000
+                output['interval_us'] = 2000
             case 250:
                 output['spread_factor'] = 6
                 output['coding_rate'] = 4
                 output['preamble_len'] = 14
                 output['tlm_ratio'] = 64
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 4000
+                output['interval_us'] = 4000
             case 150:
                 output['spread_factor'] = 7
                 output['coding_rate'] = 4
                 output['preamble_len'] = 12
                 output['tlm_ratio'] = 32
                 output['fhss_hop_interval'] = 4
-                output['payload_length'] = 6666
+                output['interval_us'] = 6666
             case 50:
                 output['spread_factor'] = 8
                 output['coding_rate'] = 4
                 output['preamble_len'] = 12
                 output['tlm_ratio'] = 16
                 output['fhss_hop_interval'] = 2
-                output['payload_length'] = 20000
+                output['interval_us'] = 20000
             case _:
                 return { 'valid' : False }
 

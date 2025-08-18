@@ -88,6 +88,24 @@ blocks:
     coordinate: [864, 476.0]
     rotation: 0
     state: enabled
+- name: elrs_module_elrs_receiver_0
+  id: elrs_module_elrs_receiver
+  parameters:
+    affinity: ''
+    alias: ''
+    binding_phrase: '"DefaultBindingPhrase"'
+    comment: ''
+    domain: '"FCC915"'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    packet_rate: '25'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [472, 116.0]
+    rotation: 0
+    state: true
 - name: epy_block_0
   id: epy_block
   parameters:
