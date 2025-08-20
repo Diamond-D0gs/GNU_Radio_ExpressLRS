@@ -21,14 +21,16 @@ if __name__ == '__main__':
         except:
             print("Warning: failed to XInitThreads()")
 
+from PyQt5 import Qt
+from gnuradio import qtgui
+from gnuradio.filter import firdes
+import sip
 from gnuradio import blocks
 from gnuradio import elrs_module
 from gnuradio import gr
-from gnuradio.filter import firdes
 from gnuradio.fft import window
 import sys
 import signal
-from PyQt5 import Qt
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
@@ -79,6 +81,41 @@ class synchronization(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
+        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
+            512, #size
+            window.WIN_HAMMING, #wintype
+            915000000, #fc
+            926900000 - 903500000, #bw
+            "", #name
+            1, #number of inputs
+            None # parent
+        )
+        self.qtgui_waterfall_sink_x_0.set_update_time(0.001)
+        self.qtgui_waterfall_sink_x_0.enable_grid(False)
+        self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
+
+
+
+        labels = ['', '', '', '', '',
+                  '', '', '', '', '']
+        colors = [0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+
+        for i in range(1):
+            if len(labels[i]) == 0:
+                self.qtgui_waterfall_sink_x_0.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_waterfall_sink_x_0.set_line_label(i, labels[i])
+            self.qtgui_waterfall_sink_x_0.set_color_map(i, colors[i])
+            self.qtgui_waterfall_sink_x_0.set_line_alpha(i, alphas[i])
+
+        self.qtgui_waterfall_sink_x_0.set_intensity_range(-140, 0)
+
+        self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.qwidget(), Qt.QWidget)
+
+        self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
         self.elrs_module_elrs_transmitter_0 = elrs_module.elrs_transmitter(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
         self.elrs_module_elrs_receiver_0 = elrs_module.elrs_receiver(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
         self.blocks_null_source_0 = blocks.null_source(gr.sizeof_gr_complex*1)
@@ -91,6 +128,7 @@ class synchronization(gr.top_block, Qt.QWidget):
         self.connect((self.blocks_null_source_0, 0), (self.elrs_module_elrs_transmitter_0, 0))
         self.connect((self.elrs_module_elrs_receiver_0, 0), (self.blocks_null_sink_0, 0))
         self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.elrs_module_elrs_receiver_0, 0))
+        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
 
     def closeEvent(self, event):

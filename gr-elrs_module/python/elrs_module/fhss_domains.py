@@ -1,4 +1,5 @@
 from .packet_rates import PACKET_RATES
+from typing import Optional
 
 FHSS_DOMAINS = {
     "AU915" : {
@@ -57,7 +58,7 @@ FHSS_DOMAINS = {
     }
 }
 
-def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
+def get_additional_domain_settings(domain: str, packet_rate: int) -> Optional[dict]:
     if domain not in FHSS_DOMAINS:
         raise ValueError('Invalid FHSS domain!')
     if packet_rate not in PACKET_RATES:
@@ -96,7 +97,7 @@ def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
                 output['fhss_hop_interval'] = 4
                 output['interval_us'] = 5000
             case _:
-                return { 'valid' : False }
+                return None
     else:
         output['bandwidth'] = 812_500
         
@@ -130,8 +131,6 @@ def get_additional_domain_settings(domain: str, packet_rate: int) -> dict:
                 output['fhss_hop_interval'] = 2
                 output['interval_us'] = 20000
             case _:
-                return { 'valid' : False }
-
-    output['valid'] = True
+                return None
 
     return output

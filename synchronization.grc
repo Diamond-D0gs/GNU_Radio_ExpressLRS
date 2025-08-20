@@ -141,7 +141,7 @@ blocks:
     bus_structure: null
     coordinate: [712, 148.0]
     rotation: 0
-    state: true
+    state: enabled
 - name: elrs_module_elrs_transmitter_0
   id: elrs_module_elrs_transmitter
   parameters:
@@ -419,7 +419,7 @@ blocks:
     bus_structure: null
     coordinate: [720, 332.0]
     rotation: 0
-    state: disabled
+    state: enabled
 
 connections:
 - [blocks_message_strobe_0, strobe, epy_block_0, trigger]
