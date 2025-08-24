@@ -1,0 +1,67 @@
+# File: lora_sdr_lora_rx_mod.block.yml
+id: lora_sdr_lora_rx_mod
+label: LoRa RX (Binary MOD)
+category: '[elrs_module]'
+
+templates:
+  imports: from gnuradio import elrs_module
+  make: elrs_module.lora_sdr_lora_rx_mod(center_freq=${center_freq}, bw=${bw}, cr=${cr}, has_crc=${has_crc}, impl_head=${impl_head}, pay_len=${pay_len}, samp_rate=${samp_rate}, sf=${sf}, sync_word=${sync_word}, soft_decoding=${soft_decoding}, ldro_mode=${ldro_mode})
+
+parameters:
+- id: center_freq
+  label: Center Frequency
+  dtype: float
+  default: 868100000
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: 250000
+- id: bw
+  label: Bandwidth
+  dtype: float
+  default: 125000
+- id: sf
+  label: Spreading Factor
+  dtype: int
+  default: 7
+- id: cr
+  label: Coding Rate
+  dtype: int
+  default: 1
+- id: impl_head
+  label: Implicit Header
+  dtype: bool
+  default: False
+- id: has_crc
+  label: Has CRC
+  dtype: bool
+  default: True
+- id: pay_len
+  label: Payload Length
+  dtype: int
+  default: 255
+- id: soft_decoding
+  label: Soft Decoding
+  dtype: bool
+  default: False
+- id: sync_word
+  label: Sync Word
+  dtype: raw
+  default: '[0x12]'
+- id: ldro_mode
+  label: LDRO Mode
+  dtype: int
+  default: 2
+
+inputs:
+- label: in
+  domain: stream
+  dtype: complex
+
+outputs:
+- label: out
+  domain: message
+  id: out
+  optional: false
+
+file_format: 1

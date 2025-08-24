@@ -20,6 +20,8 @@ from .packet_rates import PACKET_RATES
 from .elrs_enums import ConnectionState
 from gnuradio import lora_sdr # type: ignore
 from gnuradio import gr, analog, blocks, filter
+from .lora_sdr_lora_rx_mod import lora_sdr_lora_rx_mod
+from .lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
 
@@ -28,13 +30,18 @@ class _elrs_receiver_internal(gr.sync_block):
         gr.sync_block.__init__(self, name="_elrs_receiver_internal", in_sig=[], out_sig=[])
 
         self.message_port_register_in(pmt.intern('in')) # type: ignore
+        self.message_port_register_in(pmt.intern('fhss_request_in')) # type: ignore
         self.message_port_register_out(pmt.intern('out')) # type: ignore
-        self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler)
+        self.message_port_register_out(pmt.intern('fhss_request_out')) # type: ignore
+
+        self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler) # type: ignore
+        self.set_msg_handler(pmt.intern('fhss_request_in'), self._fhss_request_msg_handler) # type: ignore
 
         self._packet_rate = packet_rate
         self._binding_phrase = binding_phrase
         self._domain = domain
         self._additional_settings = additional_settings
+        self._fhss_enabled = True
 
         self._uid = md5(str(f'-DMY_BINDING_PHRASE="{binding_phrase}"').encode('utf-8')).digest()[:6]
         self._packet_time = 1.0 / packet_rate
@@ -128,6 +135,17 @@ class _elrs_receiver_internal(gr.sync_block):
         #     pdu = pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(backing_bytes), backing_bytes))  # type: ignore
         #     self.message_port_post(pmt.intern('internal_tx_pdu'), pdu) # type: ignore
 
+    def _fhss_request_msg_handler(self, msg) -> None:
+        temp: int = 0
+        
+        if self._fhss_enabled:
+            temp = self._fhss_handler.get_curr_freq()
+            self._fhss_handler.update_to_next_freq()
+        else:
+            temp = self._fhss_handler.get_center_freq()
+        
+        self.message_port_pub(pmt.intern('fhss_request_out'), pmt.from_long(temp)) # type: ignore
+
 class elrs_receiver(gr.hier_block2):
     """
     docstring for block elrs_receiver
@@ -144,7 +162,7 @@ class elrs_receiver(gr.hier_block2):
             raise Exception('Invalid domain and packet rate combination!')
 
         self._elrs_rx_internal = _elrs_receiver_internal(fhss_domain, additional_settings, packet_rate, binding_phrase)
-        inter_deci_frac = Fraction(self._elrs_tx_internal.get_freq_range(), additional_settings['bandwidth'])
+        inter_deci_frac = Fraction(self._elrs_rx_internal.get_freq_range(), additional_settings['bandwidth'])
 
         resampler_expand_params = {
             'interpolation' : inter_deci_frac.numerator,
@@ -176,7 +194,6 @@ class elrs_receiver(gr.hier_block2):
 
         lora_rx_params = {
             'center_freq' : 0,
-            'print_rx' : [False, False],
             'has_crc' : False,
             'impl_head' : True,
             'bw' : additional_settings['bandwidth'],
@@ -187,7 +204,7 @@ class elrs_receiver(gr.hier_block2):
             'ldro_mode' : 0
         }
 
-        self._lora_rx = lora_sdr.lora_sdr_lora_rx(**lora_rx_params)
+        self._lora_rx = lora_sdr_lora_rx_mod(**lora_rx_params)
 
         lora_tx_params = {
             'has_crc' : False,
@@ -199,7 +216,7 @@ class elrs_receiver(gr.hier_block2):
             'ldro_mode' : 0
         }
 
-        self._lora_tx = lora_sdr.lora_sdr_lora_tx(**lora_tx_params)
+        self._lora_tx = lora_sdr_lora_tx_mod(**lora_tx_params)
 
         self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
         self._divider = blocks.divide_cc(vlen=1) # type: ignore

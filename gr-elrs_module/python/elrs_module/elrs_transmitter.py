@@ -22,6 +22,8 @@ from .packet_rates import PACKET_RATES
 from .elrs_enums import ConnectionState
 from gnuradio import lora_sdr # type: ignore
 from gnuradio import gr, analog, blocks, filter
+from .lora_sdr_lora_rx_mod import lora_sdr_lora_rx_mod
+from .lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
 
@@ -30,15 +32,19 @@ class _elrs_transmitter_internal(gr.sync_block):
         gr.sync_block.__init__(self, name="_elrs_transmitter_intenral", in_sig=[], out_sig=[])
 
         self.message_port_register_in(pmt.intern('in')) # type: ignore
+        self.message_port_register_in(pmt.intern('fhss_request_in')) # type: ignore
         self.message_port_register_out(pmt.intern('out')) # type: ignore
+        self.message_port_register_out(pmt.intern('fhss_request_out')) # type: ignore
 
-        self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler)
+        self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler) # type: ignore
+        self.set_msg_handler(pmt.intern('fhss_request_in'), self._fhss_request_msg_handler) # type: ignore
 
         # Save the passed parameters.
         self._domain = domain
         self._packet_rate = packet_rate
         self._binding_phrase = binding_phrase
         self._additional_settings = additional_settings
+        self._fhss_enabled = True
 
         # Calculated prameters.
         self._uid = md5(str(f'-DMY_BINDING_PHRASE="{binding_phrase}"').encode('utf-8')).digest()[:6]
@@ -96,10 +102,9 @@ class _elrs_transmitter_internal(gr.sync_block):
                             ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
                             ota_packet4_s.type = PACKET_TYPE_SYNC
 
-                            print(backing_bytes.decode('latin-1'))
-                            self.message_port_pub(pmt.intern('out'), pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
+                            self.message_port_pub(pmt.intern('out'), pmt.init_u8vector(OTA4_PACKET_SIZE, backing_bytes)) # type: ignore
                     
-                            print('ELRS TX: Sent sync packet.')
+                            #print('ELRS TX: Sent sync packet.')
                     case ConnectionState.ESTABLISHING_CONNECTION:
                         pass
                     case ConnectionState.CONNECTED:
@@ -108,7 +113,7 @@ class _elrs_transmitter_internal(gr.sync_block):
                         ota_packet4_s.type = PACKET_TYPE_RCDATA
                         ota_packet4_s.rc.ch[:] = self._packet_counter.to_bytes(5, 'little')
 
-                        self.message_port_pub(pmt.intern('out'), pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
+                        self.message_port_pub(pmt.intern('out'), pmt.init_u8vector(OTA4_PACKET_SIZE, backing_bytes)) # type: ignore
 
             delta_time = time.time() - start_time
             if delta_time <= self._packet_time:
@@ -117,8 +122,7 @@ class _elrs_transmitter_internal(gr.sync_block):
                 print('ELRS TX: Warning! Packet time exceeded!')
 
     def _lora_rx_msg_handler(self, msg) -> None:
-        temp : str = pmt.symbol_to_string(msg) if pmt.is_symbol(msg) else pmt.string_to_string(msg) # type: ignore
-        ota4 = OTA_Packet4_s.from_buffer(temp.encode('latin-1')) # type: ignore
+        ota4 = OTA_Packet4_s.from_buffer(pmt.to_python(msg)) # type: ignore
         if ota4.type == PACKET_TYPE_LINKSTATS:
             with self._lock:
                 self._sync_confirmed = True
@@ -128,6 +132,17 @@ class _elrs_transmitter_internal(gr.sync_block):
         #     print(f'Packet: {packet_num}')
         #     with self._lock:
         #         self._packet_counter += 1
+
+    def _fhss_request_msg_handler(self, msg) -> None:
+        temp: int = 0
+        
+        if self._fhss_enabled:
+            temp = self._fhss_handler.get_curr_freq()
+            self._fhss_handler.update_to_next_freq()
+        else:
+            temp = self._fhss_handler.get_center_freq()
+        
+        self.message_port_pub(pmt.intern('fhss_request_out'), pmt.from_long(temp)) # type: ignore
 
 class elrs_transmitter(gr.hier_block2):
     def __init__(self, domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase"):
@@ -139,8 +154,8 @@ class elrs_transmitter(gr.hier_block2):
         fhss_domain = FHSS_DOMAINS[domain]
         additional_settings = get_additional_domain_settings(domain, packet_rate)
 
-        self._elrs_tx_internal = _elrs_transmitter_internal(fhss_domain, additional_settings, packet_rate, binding_phrase)
-        inter_deci_frac = Fraction(self._elrs_tx_internal.get_freq_range(), additional_settings['bandwidth'])
+        self._elrs_tx_internal = _elrs_transmitter_internal(fhss_domain, additional_settings, packet_rate, binding_phrase) # type: ignore
+        inter_deci_frac = Fraction(self._elrs_tx_internal.get_freq_range(), additional_settings['bandwidth']) # type: ignore
 
         resampler_expand_params = {
             'interpolation' : inter_deci_frac.numerator,
@@ -172,31 +187,30 @@ class elrs_transmitter(gr.hier_block2):
 
         lora_rx_params = {
             'center_freq' : 0,
-            'print_rx' : [False, False],
             'has_crc' : False, # ExpressLRS utilizes its own CRC.
             'impl_head' : True, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
-            'bw' : additional_settings['bandwidth'],
-            'cr' : additional_settings['coding_rate'],
-            'sf' : additional_settings['spread_factor'],
-            'samp_rate' : additional_settings['bandwidth'] * 2,
+            'bw' : additional_settings['bandwidth'], # type: ignore
+            'cr' : additional_settings['coding_rate'], # type: ignore
+            'sf' : additional_settings['spread_factor'], # type: ignore
+            'samp_rate' : additional_settings['bandwidth'] * 2, # type: ignore
             'pay_len' : OTA4_PACKET_SIZE,
             'ldro_mode' : 0
         }
 
-        self._lora_rx = lora_sdr.lora_sdr_lora_rx(**lora_rx_params) # type: ignore
+        self._lora_rx = lora_sdr_lora_rx_mod(**lora_rx_params)
 
         lora_tx_params = {
             # 'frame_zero_padd' : 0,
             'has_crc' : False, # ExpressLRS utilizes its own CRC.
             'impl_head' : True, # ExpressLRS packets are a fixed, predictable, size for a given configuration.
-            'bw' : additional_settings['bandwidth'],
-            'cr' : additional_settings['coding_rate'],
-            'sf' : additional_settings['spread_factor'],
-            'samp_rate' : additional_settings['bandwidth'] * 2,
+            'bw' : additional_settings['bandwidth'], # type: ignore
+            'cr' : additional_settings['coding_rate'], # type: ignore
+            'sf' : additional_settings['spread_factor'], # type: ignore
+            'samp_rate' : additional_settings['bandwidth'] * 2, # type: ignore
             'ldro_mode' : 0
         }
 
-        self._lora_tx = lora_sdr.lora_sdr_lora_tx(**lora_tx_params)
+        self._lora_tx = lora_sdr_lora_tx_mod(**lora_tx_params)
 
         self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
         self._divider = blocks.divide_cc() # type: ignore

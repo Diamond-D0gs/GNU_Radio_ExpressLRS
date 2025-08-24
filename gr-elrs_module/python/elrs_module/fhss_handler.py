@@ -33,8 +33,17 @@ class FHSSHandler:
     def get_curr_index(self) -> int:
         return self._index
     
+    def get_curr_freq(self) -> int:
+        return self._frequencies[self._index]
+    
+    def get_center_freq(self) -> int:
+        return self._config['center_freq']
+    
     def on_sync_channel(self) -> int:
         return self._frequencies[self._index] == self.sync_channel
     
+    def update_to_next_freq(self) -> None:
+        self.set_curr_index(self._index + 1)
+
     def set_curr_index(self, index: int) -> None:
         self._index = index % self.band_count

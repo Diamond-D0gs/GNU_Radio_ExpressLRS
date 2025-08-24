@@ -1,0 +1,59 @@
+# File: lora_sdr_lora_tx_mod.block.yml
+id: lora_sdr_lora_tx_mod
+label: LoRa TX (Binary MOD)
+category: '[elrs_module]'
+
+templates:
+  imports: from gnuradio import elrs_module
+  make: elrs_module.lora_sdr_lora_tx_mod(bw=${bw}, cr=${cr}, has_crc=${has_crc}, impl_head=${impl_head}, samp_rate=${samp_rate}, sf=${sf}, ldro_mode=${ldro_mode}, frame_zero_padd=${frame_zero_padd}, sync_word=${sync_word})
+
+parameters:
+- id: samp_rate
+  label: Sample Rate
+  dtype: float
+  default: 250000
+- id: bw
+  label: Bandwidth
+  dtype: float
+  default: 125000
+- id: sf
+  label: Spreading Factor
+  dtype: int
+  default: 7
+- id: cr
+  label: Coding Rate
+  dtype: int
+  default: 1
+- id: impl_head
+  label: Implicit Header
+  dtype: bool
+  default: False
+- id: has_crc
+  label: Has CRC
+  dtype: bool
+  default: True
+- id: sync_word
+  label: Sync Word
+  dtype: raw
+  default: '[0x12]'
+- id: ldro_mode
+  label: LDRO Mode
+  dtype: int
+  default: 2
+- id: frame_zero_padd
+  label: Frame Zero Padding
+  dtype: int
+  default: 2**7
+
+inputs:
+- label: in
+  domain: message
+  id: in
+  optional: false
+
+outputs:
+- label: out
+  domain: stream
+  dtype: complex
+
+file_format: 1

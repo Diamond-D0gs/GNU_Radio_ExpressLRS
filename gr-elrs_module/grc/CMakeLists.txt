@@ -9,5 +9,7 @@
 install(FILES
     elrs_module_elrs_receiver.block.yml
     elrs_module_elrs_transmitter.block.yml
+    elrs_module_lora_rx_mod.block.yml
+    elrs_module_lora_tx_mod.block.yml
     DESTINATION share/gnuradio/grc/blocks
 )
