@@ -19,6 +19,7 @@ from .fhss_handler import FHSSHandler
 from .packet_rates import PACKET_RATES
 from .elrs_enums import ConnectionState
 from gnuradio import lora_sdr # type: ignore
+from gnuradio.filter import pfb
 from gnuradio import gr, analog, blocks, filter
 from .lora_sdr_lora_rx_mod import lora_sdr_lora_rx_mod
 from .lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
@@ -66,8 +67,14 @@ class _elrs_receiver_internal(gr.sync_block):
 
     def get_freq_range(self) -> int:
         return self._fhss_handler.freq_range
+    
+    def get_center_freq(self) -> int:
+        return self._fhss_handler.get_center_freq()
 
     def _thread_loop(self):
+        with self._lock:
+            print(f'ELRS RX: Center freq: {self._fhss_handler.get_center_freq()}')
+
         while not self._stop_thread:
             start_time: float = time.time()
 
@@ -95,7 +102,7 @@ class _elrs_receiver_internal(gr.sync_block):
                         ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
                         ota_packet4_s.type = PACKET_TYPE_LINKSTATS
 
-                        self.message_port_pub(pmt.intern('out'), pmt.intern(backing_bytes.decode('latin-1'))) # type: ignore
+                        self.message_port_pub(pmt.intern('out'), pmt.init_u8vector(len(backing_bytes), backing_bytes)) # type: ignore
 
                         self._fhss_handler.set_curr_index(0)
                         self._connection_state = ConnectionState.CONNECTED
@@ -111,15 +118,15 @@ class _elrs_receiver_internal(gr.sync_block):
                 print('ELRS RX: Warning! Packet time exceeded!')
 
     def _lora_rx_msg_handler(self, msg) -> None:
-        print('Entered ELRS RX msg handler')
-        temp : str = pmt.symbol_to_string(msg) if pmt.is_symbol(msg) else pmt.string_to_string(msg) # type: ignore
-        ota4 = OTA_Packet4_s.from_buffer(temp.encode('latin-1')) # type: ignore
+        #print('Entered ELRS RX msg handler')
+        temp = bytearray(pmt.u8vector_elements(msg)) # type: ignore
+        ota4 = OTA_Packet4_s.from_buffer(temp) # type: ignore
         if ota4.type == PACKET_TYPE_SYNC:
             with self._lock:
                 self._sync_pkt_recv = True
                 self._packet_counter += 1
         elif ota4.type == PACKET_TYPE_RCDATA:
-            packet_num = int.from_bytes(bytes(ota4.rc.ch), 'little')
+            packet_num = int.from_bytes(bytes(ota4.payload.rc.ch.raw), 'little')
             print(f'Packet: {packet_num}')
             with self._lock:
                 self._packet_counter += 1
@@ -162,30 +169,45 @@ class elrs_receiver(gr.hier_block2):
             raise Exception('Invalid domain and packet rate combination!')
 
         self._elrs_rx_internal = _elrs_receiver_internal(fhss_domain, additional_settings, packet_rate, binding_phrase)
-        inter_deci_frac = Fraction(self._elrs_rx_internal.get_freq_range(), additional_settings['bandwidth'])
+        
+        # inter_deci_frac = Fraction(self._elrs_rx_internal.get_freq_range(), additional_settings['bandwidth'] * 2)
+        # resampler_expand_params = {
+        #     'interpolation' : inter_deci_frac.numerator,
+        #     'decimation'    : inter_deci_frac.denominator,
+        #     'taps'          : [],
+        #     'fractional_bw' : 0.4
+        # }
 
-        resampler_expand_params = {
-            'interpolation' : inter_deci_frac.numerator,
-            'decimation'    : inter_deci_frac.denominator,
-            'taps'          : [],
-            'fractional_bw' : 0.04
-        }
+        # self._rational_resampler_expand = filter.rational_resampler_ccc(**resampler_expand_params) # type: ignore
 
-        self._rational_resampler_expand = filter.rational_resampler_ccc(**resampler_expand_params) # type: ignore
+        # resampler_shrink_params = {
+        #     'interpolation' : inter_deci_frac.denominator,
+        #     'decimation'    : inter_deci_frac.numerator,
+        #     'taps'          : [],
+        #     'fractional_bw' : 0.4
+        # }
 
-        resampler_shrink_params = {
-            'interpolation' : inter_deci_frac.denominator,
-            'decimation'    : inter_deci_frac.numerator,
-            'taps'          : [],
-            'fractional_bw' : 0.04
-        }
+        # self._rational_resampler_shrink = filter.rational_resampler_ccc(**resampler_shrink_params) # type: ignore
 
-        self._rational_resampler_expand = filter.rational_resampler_ccc(**resampler_shrink_params) # type: ignore
+        resampling_rate_expand = self._elrs_rx_internal.get_freq_range() / (additional_settings['bandwidth'] * 2)
+        resampling_rate_shrink = (additional_settings['bandwidth'] * 2) / self._elrs_rx_internal.get_freq_range()
+
+        self._resampler_expand = pfb.arb_resampler_ccf(
+            rate=resampling_rate_expand,
+            taps=None,
+            flt_size=32
+        )
+
+        self._resampler_shrink = pfb.arb_resampler_ccf(
+            rate=resampling_rate_shrink,
+            taps=None,
+            flt_size=32
+        )
 
         shift_signal_gen_params = {
             'sampling_freq' : self._elrs_rx_internal.get_freq_range(),
             'waveform'      : analog.GR_COS_WAVE, # type: ignore
-            'wave_freq'     : self._elrs_rx_internal.get_init_freq(),
+            'wave_freq'     : self._elrs_rx_internal.get_init_freq() - 3e6,
             'ampl'          : 1,
             'offset'        : 0
         }
@@ -193,7 +215,7 @@ class elrs_receiver(gr.hier_block2):
         self._shift_signal_gen = analog.sig_source_c(**shift_signal_gen_params) # type: ignore
 
         lora_rx_params = {
-            'center_freq' : 0,
+            'center_freq' : self._elrs_rx_internal.get_center_freq(),
             'has_crc' : False,
             'impl_head' : True,
             'bw' : additional_settings['bandwidth'],
@@ -224,10 +246,15 @@ class elrs_receiver(gr.hier_block2):
         self.msg_connect((self._lora_rx, 'out'), (self._elrs_rx_internal, 'in'))
         self.msg_connect((self._elrs_rx_internal, 'out'), (self._lora_tx, 'in'))
 
-        self.connect((self, 0), (self._divider, 0))
-        self.connect(self._shift_signal_gen, (self._divider, 1))
-        self.connect(self._divider, (self._lora_rx, 0))
+        # self.connect(self, (self._divider, 0))
+        # self.connect(self._shift_signal_gen, (self._divider, 1))
+        # self.connect(self._divider, self._resampler_shrink)
+        # self.connect(self._resampler_shrink, self._lora_rx)
 
-        self.connect((self._lora_tx, 0), (self._multiplier, 0))
-        self.connect(self._shift_signal_gen, (self._multiplier, 1))
-        self.connect(self._multiplier, (self, 0))
+        # self.connect(self._lora_tx, self._resampler_expand)
+        # self.connect(self._resampler_expand, (self._multiplier, 0))
+        # self.connect(self._shift_signal_gen, (self._multiplier, 1))
+        # self.connect(self._multiplier, self)
+
+        self.connect(self._lora_tx, (self, 0))
+        self.connect((self, 0), self._lora_rx)

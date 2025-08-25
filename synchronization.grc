@@ -57,37 +57,6 @@ blocks:
     coordinate: [200, 12]
     rotation: 0
     state: enabled
-- name: blocks_message_debug_0
-  id: blocks_message_debug
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    en_uvec: 'True'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [904, 408.0]
-    rotation: 0
-    state: disabled
-- name: blocks_message_strobe_0
-  id: blocks_message_strobe
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    msg: pmt.init_u8vector(1, 0x01)
-    period: '100'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [168, 436.0]
-    rotation: 0
-    state: enabled
 - name: blocks_null_sink_0
   id: blocks_null_sink
   parameters:
@@ -102,26 +71,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [968, 168.0]
+    coordinate: [672, 64.0]
     rotation: 0
-    state: disabled
-- name: blocks_null_sink_0_0
-  id: blocks_null_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    bus_structure_sink: '[[0,],]'
-    comment: ''
-    num_inputs: '1'
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [744, 64.0]
-    rotation: 0
-    state: disabled
+    state: true
 - name: blocks_null_source_0
   id: blocks_null_source
   parameters:
@@ -138,7 +90,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [232, 168.0]
+    coordinate: [152, 176.0]
     rotation: 0
     state: disabled
 - name: elrs_module_elrs_receiver_0
@@ -158,7 +110,7 @@ blocks:
     bus_structure: null
     coordinate: [704, 148.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: elrs_module_elrs_transmitter_0
   id: elrs_module_elrs_transmitter
   parameters:
@@ -175,56 +127,6 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [400, 148.0]
-    rotation: 0
-    state: disabled
-- name: lora_sdr_lora_rx_mod_0
-  id: lora_sdr_lora_rx_mod
-  parameters:
-    affinity: ''
-    alias: ''
-    bw: '125000'
-    center_freq: '868100000'
-    comment: ''
-    cr: '1'
-    has_crc: 'True'
-    impl_head: 'False'
-    ldro_mode: '2'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    pay_len: '255'
-    samp_rate: '250000'
-    sf: '7'
-    soft_decoding: 'False'
-    sync_word: '[0x12]'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [616, 364.0]
-    rotation: 0
-    state: disabled
-- name: lora_sdr_lora_tx_mod_0
-  id: lora_sdr_lora_tx_mod
-  parameters:
-    affinity: ''
-    alias: ''
-    bw: '125000'
-    comment: ''
-    cr: '1'
-    frame_zero_padd: 2**7
-    has_crc: 'True'
-    impl_head: 'False'
-    ldro_mode: '2'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    samp_rate: '250000'
-    sf: '7'
-    sync_word: '[0x12]'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [384, 380.0]
     rotation: 0
     state: enabled
 - name: qtgui_waterfall_sink_x_0
@@ -290,15 +192,11 @@ blocks:
     state: enabled
 
 connections:
-- [blocks_message_strobe_0, strobe, lora_sdr_lora_tx_mod_0, in]
 - [blocks_null_source_0, '0', elrs_module_elrs_transmitter_0, '0']
-- [elrs_module_elrs_receiver_0, '0', blocks_null_sink_0, '0']
-- [elrs_module_elrs_transmitter_0, '0', blocks_null_sink_0_0, '0']
+- [elrs_module_elrs_receiver_0, '0', elrs_module_elrs_transmitter_0, '0']
+- [elrs_module_elrs_transmitter_0, '0', blocks_null_sink_0, '0']
 - [elrs_module_elrs_transmitter_0, '0', elrs_module_elrs_receiver_0, '0']
 - [elrs_module_elrs_transmitter_0, '0', qtgui_waterfall_sink_x_0, '0']
-- [lora_sdr_lora_rx_mod_0, out, blocks_message_debug_0, print]
-- [lora_sdr_lora_tx_mod_0, '0', lora_sdr_lora_rx_mod_0, '0']
-- [lora_sdr_lora_tx_mod_0, '0', qtgui_waterfall_sink_x_0, '0']
 
 metadata:
   file_format: 1

@@ -2,58 +2,96 @@
 id: lora_sdr_lora_tx_mod
 label: LoRa TX (Binary MOD)
 category: '[elrs_module]'
-
-templates:
-  imports: from gnuradio import elrs_module
-  make: elrs_module.lora_sdr_lora_tx_mod(bw=${bw}, cr=${cr}, has_crc=${has_crc}, impl_head=${impl_head}, samp_rate=${samp_rate}, sf=${sf}, ldro_mode=${ldro_mode}, frame_zero_padd=${frame_zero_padd}, sync_word=${sync_word})
+flags: [python]
 
 parameters:
-- id: samp_rate
-  label: Sample Rate
-  dtype: float
-  default: 250000
-- id: bw
-  label: Bandwidth
-  dtype: float
-  default: 125000
-- id: sf
-  label: Spreading Factor
-  dtype: int
-  default: 7
-- id: cr
-  label: Coding Rate
-  dtype: int
-  default: 1
-- id: impl_head
-  label: Implicit Header
-  dtype: bool
-  default: False
-- id: has_crc
-  label: Has CRC
-  dtype: bool
-  default: True
-- id: sync_word
-  label: Sync Word
-  dtype: raw
-  default: '[0x12]'
-- id: ldro_mode
-  label: LDRO Mode
-  dtype: int
-  default: 2
-- id: frame_zero_padd
-  label: Frame Zero Padding
-  dtype: int
-  default: 2**7
+-   id: samp_rate
+    label: Output Sampling Rate
+    dtype: int
+    default: 250000
+-   id: bw
+    label: Bandwidth
+    dtype: int
+    default: 125000
+-   id: sf
+    label: Spreading Factor
+    dtype: int
+    default: 7
+-   id: impl_head
+    label: Implicit Header
+    dtype: enum
+    options: ['True','False']
+    option_labels: ['Yes','No']
+    default: 'False'
+-   id: cr
+    label: Coding Rate
+    dtype: int
+    options: ['1','2','3','4']
+    option_labels: ['4/5','4/6','4/7','4/8']
+    default: '1'
+-   id: has_crc
+    label: CRC Presence
+    dtype: enum
+    options: ['True','False']
+    option_labels: ['Yes','No']
+    default: 'True'
+-   id: ldro
+    label: LDRO
+    dtype: enum
+    options: ['0','1','2']
+    option_labels: ['Disable','Enable','Auto']
+    default: '2'
+-   id: sync_word
+    label: Sync Word
+    dtype: raw
+    hide: part
+    default: '[0x12]'
+-   id: frame_zero_padd
+    label: Frame Zero Padding
+    dtype: int
+    hide: part
+    default: 128
 
 inputs:
-- label: in
-  domain: message
-  id: in
-  optional: false
+-   label: in
+    domain: message
+    id: in
 
 outputs:
-- label: out
-  domain: stream
-  dtype: complex
+-   label: out
+    dtype: complex
+    vlen: 1
+
+templates:
+    imports: from gnuradio.elrs_module.lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
+    make: "lora_sdr_lora_tx_mod(\n    bw=${ bw },\n    cr=${ cr },\n    has_crc=${ has_crc\
+        \ },\n    impl_head=${ impl_head },\n    samp_rate=${ samp_rate },\n    sf=${\
+        \ sf },\n    ldro_mode=${ldro},\n    frame_zero_padd=${frame_zero_padd},\n    sync_word=${sync_word}\n)"
+    callbacks:
+    - set_cr(${ cr })
+    - set_sf(${ sf })
+
+asserts:
+- ${ (samp_rate/bw).is_integer()}
+
+documentation: |-
+    Complete LoRa transmitter which accepts binary u8vector messages.
+    This is a modified version of the standard LoRa transmitter that replaces the internal whitening block with one that accepts asynchronous u8vector messages containing the payload bytes.
+
+    Parameters:
+        - Output sampling rate: Output sampling rate (Should be an integer multiple of Bandwidth)
+        - Bandwidth: bandwidth of the LoRa signal
+        - Spreading factor
+        - Implicit header: Use implicit header mode, else use explicit
+        - Coding rate: coding rate to use
+        - CRC presence: Payload contains a CRC
+        - LDRO: Usage of low data rate optimisation mode
+        - Sync word: Sync word to use
+        - Frame zero padding: Number of null samples padded after each frame
+
+    Inputs:
+        - in (message): Accepts PMT u8vectors, each representing a payload to transmit.
+    Outputs
+        - out (stream): Stream of baseband complex samples that can be fed to the SDR frontend.
 
 file_format: 1

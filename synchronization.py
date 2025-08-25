@@ -21,15 +21,14 @@ if __name__ == '__main__':
         except:
             print("Warning: failed to XInitThreads()")
 
-from PyQt5 import Qt
+from PyQt5 import Qt # type: ignore
 from gnuradio import qtgui
-from gnuradio.filter import firdes
+from gnuradio.filter import firdes # type: ignore
 import sip
 from gnuradio import blocks
-import pmt
-from gnuradio import elrs_module
+from gnuradio import elrs_module # type: ignore
 from gnuradio import gr
-from gnuradio.fft import window
+from gnuradio.fft import window # type: ignore
 import sys
 import signal
 from argparse import ArgumentParser
@@ -82,11 +81,11 @@ class synchronization(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
-        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
+        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c( # type: ignore
             512, #size
             window.WIN_HAMMING, #wintype
             915000000, #fc
-            926900000 - 903500000, #bw
+            500_000, #bw
             "", #name
             1, #number of inputs
             None # parent
@@ -117,15 +116,18 @@ class synchronization(gr.top_block, Qt.QWidget):
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.qwidget(), Qt.QWidget)
 
         self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
-        self.lora_sdr_lora_tx_mod_0 = elrs_module.lora_sdr_lora_tx_mod(bw=125000, cr=1, has_crc=True, impl_head=False, samp_rate=250000, sf=7, ldro_mode=2, frame_zero_padd=2**7, sync_word=[0x12])
-        self.blocks_message_strobe_0 = blocks.message_strobe(pmt.init_u8vector(1, 0x01), 100)
+        self.elrs_module_elrs_transmitter_0 = elrs_module.elrs_transmitter(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
+        self.elrs_module_elrs_receiver_0 = elrs_module.elrs_receiver(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
+        self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_gr_complex*1) # type: ignore
 
 
         ##################################################
         # Connections
         ##################################################
-        self.msg_connect((self.blocks_message_strobe_0, 'strobe'), (self.lora_sdr_lora_tx_mod_0, 'in'))
-        self.connect((self.lora_sdr_lora_tx_mod_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        self.connect((self.elrs_module_elrs_receiver_0, 0), (self.elrs_module_elrs_transmitter_0, 0))
+        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.blocks_null_sink_0, 0))
+        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.elrs_module_elrs_receiver_0, 0))
+        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
 
     def closeEvent(self, event):
@@ -154,7 +156,7 @@ class synchronization(gr.top_block, Qt.QWidget):
 def main(top_block_cls=synchronization, options=None):
 
     if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-        style = gr.prefs().get_string('qtgui', 'style', 'raster')
+        style = gr.prefs().get_string('qtgui', 'style', 'raster') # type: ignore
         Qt.QApplication.setGraphicsSystem(style)
     qapp = Qt.QApplication(sys.argv)
 
