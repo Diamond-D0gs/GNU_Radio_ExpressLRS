@@ -24,4 +24,5 @@ from .elrs_receiver import elrs_receiver
 from .elrs_transmitter import elrs_transmitter
 from .lora_sdr_lora_rx_mod import lora_sdr_lora_rx_mod
 from .lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
+from .mock_elrs_sender import MockELRSSender
 #

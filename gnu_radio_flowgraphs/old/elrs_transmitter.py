@@ -27,6 +27,7 @@ import sip
 from gnuradio import analog
 from gnuradio import blocks
 import pmt
+from gnuradio import elrs_module
 from gnuradio import gr
 from gnuradio.fft import window
 import sys
@@ -36,7 +37,6 @@ from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 from gnuradio.filter import pfb
 import elrs_transmitter_epy_block_0 as epy_block_0  # embedded python block
-import elrs_transmitter_epy_block_1 as epy_block_1  # embedded python block
 import gnuradio.lora_sdr as lora_sdr
 
 
@@ -88,7 +88,7 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self.freq_temp = freq_temp = 0
         self.freq_count = freq_count = 40
         self.freq_center = freq_center = (freq_stop + freq_start) / 2
-        self.disable = disable = True
+        self.disable = disable = False
         self.crc = crc = False
         self.cr = cr = 1
         self.counter = counter = 0
@@ -150,11 +150,12 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self.lora_sdr_gray_demap_0 = lora_sdr.gray_demap(sf)
         self.lora_sdr_add_crc_0 = lora_sdr.add_crc(crc)
         self.lora_rx_0 = lora_sdr.lora_sdr_lora_rx( bw=bandwidth, cr=1, has_crc=True, impl_head=False, pay_len=255, samp_rate=samp_rate, sf=7, sync_word=[0x12], soft_decoding=True, ldro_mode=2, print_rx=[True,True])
-        self.epy_block_1 = epy_block_1.counter_formatter()
         self.epy_block_0 = epy_block_0.fhss_controller(binding_phrase=binding_phrase, freq_start=freq_start, freq_stop=freq_stop, freq_count=freq_count, freq_center=freq_center, disable=disable)
+        self.elrs_module_elrs_transmitter_0 = elrs_module.elrs_transmitter(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
+        self.elrs_module_elrs_receiver_0 = elrs_module.elrs_receiver(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
         self.blocks_multiply_xx_0 = blocks.multiply_vcc(1)
         self.blocks_msgpair_to_var_0 = blocks.msg_pair_to_var(self.set_freq_temp)
-        self.blocks_message_strobe_0 = blocks.message_strobe(pmt.intern(""), 1000)
+        self.blocks_message_strobe_0 = blocks.message_strobe(pmt.intern(""), 1000 // 25)
         self.blocks_divide_xx_0 = blocks.divide_cc(1)
         self.analog_sig_source_x_0 = analog.sig_source_c(wide_samp_rate, analog.GR_COS_WAVE, freq_temp, 1, 0, 0)
 
@@ -162,15 +163,17 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         ##################################################
         # Connections
         ##################################################
-        self.msg_connect((self.blocks_message_strobe_0, 'strobe'), (self.epy_block_1, 'msg_in'))
-        self.msg_connect((self.epy_block_0, 'msg_out'), (self.blocks_msgpair_to_var_0, 'inpair'))
-        self.msg_connect((self.epy_block_1, 'msg_out'), (self.epy_block_0, 'msg_in'))
-        self.msg_connect((self.epy_block_1, 'msg_out'), (self.lora_sdr_whitening_0, 'msg'))
+        self.msg_connect((self.blocks_message_strobe_0, 'strobe'), (self.epy_block_0, 'trigger_in'))
+        self.msg_connect((self.elrs_module_elrs_transmitter_0, 'start'), (self.epy_block_0, 'start'))
+        self.msg_connect((self.epy_block_0, 'freq_out'), (self.blocks_msgpair_to_var_0, 'inpair'))
+        self.msg_connect((self.epy_block_0, 'msg_out'), (self.lora_sdr_whitening_0, 'msg'))
         self.connect((self.analog_sig_source_x_0, 0), (self.blocks_divide_xx_0, 1))
         self.connect((self.analog_sig_source_x_0, 0), (self.blocks_multiply_xx_0, 1))
         self.connect((self.blocks_divide_xx_0, 0), (self.pfb_arb_resampler_xxx_0_0, 0))
         self.connect((self.blocks_multiply_xx_0, 0), (self.blocks_divide_xx_0, 0))
         self.connect((self.blocks_multiply_xx_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        self.connect((self.elrs_module_elrs_receiver_0, 0), (self.elrs_module_elrs_transmitter_0, 0))
+        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.elrs_module_elrs_receiver_0, 0))
         self.connect((self.lora_sdr_add_crc_0, 0), (self.lora_sdr_hamming_enc_0, 0))
         self.connect((self.lora_sdr_gray_demap_0, 0), (self.lora_sdr_modulate_0, 0))
         self.connect((self.lora_sdr_hamming_enc_0, 0), (self.lora_sdr_interleaver_0, 0))

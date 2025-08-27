@@ -33,12 +33,10 @@ class _elrs_transmitter_internal(gr.sync_block):
         gr.sync_block.__init__(self, name="_elrs_transmitter_intenral", in_sig=[], out_sig=[])
 
         self.message_port_register_in(pmt.intern('in')) # type: ignore
-        self.message_port_register_in(pmt.intern('fhss_request_in')) # type: ignore
         self.message_port_register_out(pmt.intern('out')) # type: ignore
-        self.message_port_register_out(pmt.intern('fhss_request_out')) # type: ignore
+        self.message_port_register_out(pmt.intern('start_out')) # type: ignore
 
         self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler) # type: ignore
-        self.set_msg_handler(pmt.intern('fhss_request_in'), self._fhss_request_msg_handler) # type: ignore
 
         # Save the passed parameters.
         self._domain = domain
@@ -64,6 +62,7 @@ class _elrs_transmitter_internal(gr.sync_block):
         self._stop_thread = False
         self._packet_counter = 0
         self._tlm_pkt_send_cnt = 0
+        self._sent_start = False
         
         # Start the timing thread.
         self._thread.daemon = True
@@ -115,13 +114,17 @@ class _elrs_transmitter_internal(gr.sync_block):
                     case ConnectionState.ESTABLISHING_CONNECTION:
                         pass
                     case ConnectionState.CONNECTED:
-                        backing_bytes = bytearray(OTA4_PACKET_SIZE)
-                        ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
-                        ota_packet4_s.type = PACKET_TYPE_RCDATA
-                        ota_packet4_s.payload.rc.ch.raw[:] = self._packet_counter.to_bytes(5, 'little')
-                        self._packet_counter += 1
+                        # backing_bytes = bytearray(OTA4_PACKET_SIZE)
+                        # ota_packet4_s = OTA_Packet4_s.from_buffer(backing_bytes)
+                        # ota_packet4_s.type = PACKET_TYPE_RCDATA
+                        # ota_packet4_s.payload.rc.ch.raw[:] = self._packet_counter.to_bytes(5, 'little')
+                        # self._packet_counter += 1
 
-                        self.message_port_pub(pmt.intern('out'), pmt.init_u8vector(OTA4_PACKET_SIZE, backing_bytes)) # type: ignore
+                        if not self._sent_start:
+                            print('ELRS TX: Activating FHSS flowgraph.')
+                            start_str_bytes = bytearray('start', encoding='utf-8')
+                            self.message_port_pub(pmt.intern('start_out'), pmt.init_u8vector(len(start_str_bytes), start_str_bytes)) # type: ignore
+                            self._sent_start = True
 
             delta_time = time.time() - start_time
             if delta_time <= self._packet_time:
@@ -141,23 +144,14 @@ class _elrs_transmitter_internal(gr.sync_block):
         #     with self._lock:
         #         self._packet_counter += 1
 
-    def _fhss_request_msg_handler(self, msg) -> None:
-        temp: int = 0
-        
-        if self._fhss_enabled:
-            temp = self._fhss_handler.get_curr_freq()
-            self._fhss_handler.update_to_next_freq()
-        else:
-            temp = self._fhss_handler.get_center_freq()
-        
-        self.message_port_pub(pmt.intern('fhss_request_out'), pmt.from_long(temp)) # type: ignore
-
 class elrs_transmitter(gr.hier_block2):
     def __init__(self, domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase"):
         gr.hier_block2.__init__(self,
             name="elrs_transmitter",
             input_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize), # type: ignore
             output_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize)) # type: ignore
+        
+        self.message_port_register_hier_out('start') # type: ignore
         
         fhss_domain = FHSS_DOMAINS[domain]
         additional_settings = get_additional_domain_settings(domain, packet_rate)
@@ -241,6 +235,7 @@ class elrs_transmitter(gr.hier_block2):
         self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
         self._divider = blocks.divide_cc() # type: ignore
 
+        self.msg_connect((self._elrs_tx_internal, 'start_out'), (self, 'start'))
         self.msg_connect((self._elrs_tx_internal, 'out'), (self._lora_tx, 'in'))
         self.msg_connect((self._lora_rx, 'out'), (self._elrs_tx_internal, 'in'))
 

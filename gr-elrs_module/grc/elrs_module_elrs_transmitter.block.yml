@@ -41,6 +41,10 @@ outputs:
   domain: stream
   dtype: complex
 
+- label: start
+  domain: message
+  id: start
+
 # - label: freq_center
 #   domain: message  # The key that tells GRC this is a message port
 

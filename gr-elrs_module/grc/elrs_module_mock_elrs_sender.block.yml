@@ -1,0 +1,74 @@
+id: mock_elrs_sender
+label: Mock ELRS Sender
+label: Mock ELRS Sender
+category: '[Mock ELRS]'
+file_format: 1
+
+templates:
+  imports: from gnuradio import elrs_module
+  make: |
+      elrs_module.mock_elrs_sender.MockELRSSender(
+          filepath=${filepath},
+          binding_phrase=${binding_phrase},
+          packet_rate=${packet_rate},
+          start_freq=${start_freq},
+          stop_freq=${stop_freq},
+          center_freq=${center_freq},
+          freq_count=${freq_count},
+          packet_hop_interval=${packet_hop_interval},
+          timing_adjust=${timing_adjust}
+      )
+
+parameters:
+    - id: filepath
+      label: Filepath
+      dtype: string
+      default: ''
+
+    - id: binding_phrase
+      label: Binding Phrase
+      dtype: string
+      default: 'DefaultBindingPhrase'
+
+    - id: packet_rate
+      label: Packet Rate (Hz)
+      dtype: int
+      default: 25
+
+    - id: start_freq
+      label: Start Frequency (Hz)
+      dtype: int
+      default: 903500000
+
+    - id: stop_freq
+      label: Stop Frequency (Hz)
+      dtype: int
+      default: 926900000
+
+    - id: center_freq
+      label: Center Frequency (Hz)
+      dtype: int
+      default: 915000000
+
+    - id: freq_count
+      label: Frequency Hop Count
+      dtype: int
+      default: 40
+
+    - id: packet_hop_interval
+      label: Packet Hop Interval
+      dtype: int
+      default: 2
+
+    - id: timing_adjust
+      label: Timing Adjust
+      dtype: float
+      default: 1.0
+
+outputs:
+    - label: freq_update
+      domain: message
+      optional: true
+    - label: out
+      domain: message
+      optional: true

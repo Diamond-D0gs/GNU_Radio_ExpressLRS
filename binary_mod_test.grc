@@ -11,7 +11,7 @@ options:
     gen_linking: dynamic
     generate_options: qt_gui
     hier_block_src_path: '.:'
-    id: synchronization
+    id: binary_mod_test
     max_nouts: '0'
     output_language: python
     placement: (0,0)
@@ -33,18 +33,6 @@ options:
     state: enabled
 
 blocks:
-- name: period
-  id: variable
-  parameters:
-    comment: ''
-    value: '1000'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [312, 28.0]
-    rotation: 0
-    state: enabled
 - name: samp_rate
   id: variable
   parameters:
@@ -54,9 +42,21 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [200, 12]
+    coordinate: [184, 12]
     rotation: 0
     state: enabled
+- name: test
+  id: variable
+  parameters:
+    comment: ''
+    value: '''TEST''.encode()'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [312, 20.0]
+    rotation: 0
+    state: true
 - name: blocks_message_debug_0
   id: blocks_message_debug
   parameters:
@@ -68,62 +68,124 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [496, 352.0]
+    coordinate: [968, 288.0]
     rotation: 0
-    state: true
-- name: blocks_null_sink_0
-  id: blocks_null_sink
+    state: disabled
+- name: blocks_message_strobe_0
+  id: blocks_message_strobe
   parameters:
     affinity: ''
     alias: ''
-    bus_structure_sink: '[[0,],]'
     comment: ''
-    num_inputs: '1'
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [568, 96.0]
-    rotation: 0
-    state: true
-- name: elrs_module_elrs_receiver_0
-  id: elrs_module_elrs_receiver
-  parameters:
-    affinity: ''
-    alias: ''
-    binding_phrase: '"DefaultBindingPhrase"'
-    comment: ''
-    domain: '"FCC915"'
     maxoutbuf: '0'
     minoutbuf: '0'
-    packet_rate: '25'
+    msg: pmt.init_u8vector(len(test), list(test))
+    period: '1000'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [584, 188.0]
+    coordinate: [120, 284.0]
     rotation: 0
-    state: enabled
-- name: elrs_module_elrs_transmitter_0
-  id: elrs_module_elrs_transmitter
+    state: disabled
+- name: lora_sdr_lora_rx_mod_0
+  id: lora_sdr_lora_rx_mod
   parameters:
     affinity: ''
     alias: ''
-    binding_phrase: '"DefaultBindingPhrase"'
+    bw: '125000'
+    center_freq: '868100000'
     comment: ''
-    domain: '"FCC915"'
+    cr: '1'
+    has_crc: 'True'
+    impl_head: 'False'
+    ldro: '0'
     maxoutbuf: '0'
     minoutbuf: '0'
-    packet_rate: '25'
+    pay_len: '255'
+    samp_rate: '250000'
+    sf: '7'
+    soft_decoding: 'False'
+    sync_word: '[0x12]'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [256, 204.0]
+    coordinate: [648, 260.0]
     rotation: 0
-    state: enabled
+    state: disabled
+- name: lora_sdr_lora_tx_mod_0
+  id: lora_sdr_lora_tx_mod
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: '125000'
+    comment: ''
+    cr: '1'
+    frame_zero_padd: '128'
+    has_crc: 'False'
+    impl_head: 'False'
+    ldro: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: '250000'
+    sf: '7'
+    sync_word: '[0x12]'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [384, 260.0]
+    rotation: 0
+    state: disabled
+- name: lora_sdr_lora_tx_mod_1
+  id: lora_sdr_lora_tx_mod
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: '125000'
+    comment: ''
+    cr: '1'
+    frame_zero_padd: '128'
+    has_crc: 'False'
+    impl_head: 'False'
+    ldro: '2'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: '250000'
+    sf: '7'
+    sync_word: '[0x12]'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [728, 60.0]
+    rotation: 0
+    state: true
+- name: mock_elrs_sender_0
+  id: mock_elrs_sender
+  parameters:
+    affinity: ''
+    alias: ''
+    binding_phrase: DefaultBindingPhrase
+    center_freq: '915000000'
+    comment: ''
+    filepath: /home/gabriel/GNU_Radio_ExpressLRS/test.txt
+    freq_count: '40'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    packet_hop_interval: '2'
+    packet_rate: '25'
+    start_freq: '903500000'
+    stop_freq: '926900000'
+    timing_adjust: '1.0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [424, 36.0]
+    rotation: 0
+    state: true
 - name: qtgui_waterfall_sink_x_0
   id: qtgui_waterfall_sink_x
   parameters:
@@ -140,7 +202,7 @@ blocks:
     alpha8: '1.0'
     alpha9: '1.0'
     axislabels: 'True'
-    bw: 926900000 - 903500000
+    bw: samp_rate
     color1: '0'
     color10: '0'
     color2: '0'
@@ -152,12 +214,12 @@ blocks:
     color8: '0'
     color9: '0'
     comment: ''
-    fc: '915000000'
-    fftsize: '512'
+    fc: '0'
+    fftsize: '1024'
     freqhalf: 'True'
     grid: 'False'
     gui_hint: ''
-    int_max: '0'
+    int_max: '10'
     int_min: '-140'
     label1: ''
     label10: ''
@@ -176,22 +238,22 @@ blocks:
     nconnections: '1'
     showports: 'False'
     type: complex
-    update_time: '0.001'
-    wintype: window.WIN_HAMMING
+    update_time: '0.10'
+    wintype: window.WIN_BLACKMAN_hARRIS
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [560, 268.0]
+    coordinate: [984, 116.0]
     rotation: 0
-    state: enabled
+    state: true
 
 connections:
-- [elrs_module_elrs_receiver_0, '0', elrs_module_elrs_transmitter_0, '0']
-- [elrs_module_elrs_transmitter_0, '0', blocks_null_sink_0, '0']
-- [elrs_module_elrs_transmitter_0, '0', elrs_module_elrs_receiver_0, '0']
-- [elrs_module_elrs_transmitter_0, '0', qtgui_waterfall_sink_x_0, '0']
-- [elrs_module_elrs_transmitter_0, start, blocks_message_debug_0, print]
+- [blocks_message_strobe_0, strobe, lora_sdr_lora_tx_mod_0, in]
+- [lora_sdr_lora_rx_mod_0, out, blocks_message_debug_0, print]
+- [lora_sdr_lora_tx_mod_0, '0', lora_sdr_lora_rx_mod_0, '0']
+- [lora_sdr_lora_tx_mod_1, '0', qtgui_waterfall_sink_x_0, '0']
+- [mock_elrs_sender_0, out, lora_sdr_lora_tx_mod_1, in]
 
 metadata:
   file_format: 1

@@ -25,7 +25,6 @@ from PyQt5 import Qt
 from gnuradio import qtgui
 from gnuradio.filter import firdes
 import sip
-from gnuradio import blocks
 from gnuradio import elrs_module
 from gnuradio import gr
 from gnuradio.fft import window
@@ -34,12 +33,13 @@ import signal
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
+from gnuradio.elrs_module.lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
 
 
 
 from gnuradio import qtgui
 
-class synchronization(gr.top_block, Qt.QWidget):
+class binary_mod_test(gr.top_block, Qt.QWidget):
 
     def __init__(self):
         gr.top_block.__init__(self, "Not titled yet", catch_exceptions=True)
@@ -62,7 +62,7 @@ class synchronization(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "synchronization")
+        self.settings = Qt.QSettings("GNU Radio", "binary_mod_test")
 
         try:
             if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
@@ -75,22 +75,22 @@ class synchronization(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
+        self.test = test = 'TEST'.encode()
         self.samp_rate = samp_rate = 32000
-        self.period = period = 1000
 
         ##################################################
         # Blocks
         ##################################################
         self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
-            512, #size
-            window.WIN_HAMMING, #wintype
-            915000000, #fc
-            926900000 - 903500000, #bw
+            1024, #size
+            window.WIN_BLACKMAN_hARRIS, #wintype
+            0, #fc
+            samp_rate, #bw
             "", #name
             1, #number of inputs
             None # parent
         )
-        self.qtgui_waterfall_sink_x_0.set_update_time(0.001)
+        self.qtgui_waterfall_sink_x_0.set_update_time(0.10)
         self.qtgui_waterfall_sink_x_0.enable_grid(False)
         self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
 
@@ -111,51 +111,67 @@ class synchronization(gr.top_block, Qt.QWidget):
             self.qtgui_waterfall_sink_x_0.set_color_map(i, colors[i])
             self.qtgui_waterfall_sink_x_0.set_line_alpha(i, alphas[i])
 
-        self.qtgui_waterfall_sink_x_0.set_intensity_range(-140, 0)
+        self.qtgui_waterfall_sink_x_0.set_intensity_range(-140, 10)
 
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.qwidget(), Qt.QWidget)
 
         self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
-        self.elrs_module_elrs_transmitter_0 = elrs_module.elrs_transmitter(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
-        self.elrs_module_elrs_receiver_0 = elrs_module.elrs_receiver(domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase")
-        self.blocks_null_sink_0 = blocks.null_sink(gr.sizeof_gr_complex*1)
-        self.blocks_message_debug_0 = blocks.message_debug(True)
+        self.mock_elrs_sender_0 = elrs_module.mock_elrs_sender.MockELRSSender(
+            filepath='/home/gabriel/GNU_Radio_ExpressLRS/test.txt',
+            binding_phrase='DefaultBindingPhrase',
+            packet_rate=25,
+            start_freq=903500000,
+            stop_freq=926900000,
+            center_freq=915000000,
+            freq_count=40,
+            packet_hop_interval=2,
+            timing_adjust=1.0
+        )
+        self.lora_sdr_lora_tx_mod_1 = lora_sdr_lora_tx_mod(
+            bw=125000,
+            cr=1,
+            has_crc=False,
+            impl_head=False,
+            samp_rate=250000,
+            sf=7,
+            ldro_mode=2,
+            frame_zero_padd=128,
+            sync_word=[0x12]
+        )
 
 
         ##################################################
         # Connections
         ##################################################
-        self.msg_connect((self.elrs_module_elrs_transmitter_0, 'start'), (self.blocks_message_debug_0, 'print'))
-        self.connect((self.elrs_module_elrs_receiver_0, 0), (self.elrs_module_elrs_transmitter_0, 0))
-        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.blocks_null_sink_0, 0))
-        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.elrs_module_elrs_receiver_0, 0))
-        self.connect((self.elrs_module_elrs_transmitter_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
+        self.msg_connect((self.mock_elrs_sender_0, 'out'), (self.lora_sdr_lora_tx_mod_1, 'in'))
+        self.connect((self.lora_sdr_lora_tx_mod_1, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "synchronization")
+        self.settings = Qt.QSettings("GNU Radio", "binary_mod_test")
         self.settings.setValue("geometry", self.saveGeometry())
         self.stop()
         self.wait()
 
         event.accept()
 
+    def get_test(self):
+        return self.test
+
+    def set_test(self, test):
+        self.test = test
+
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-
-    def get_period(self):
-        return self.period
-
-    def set_period(self, period):
-        self.period = period
+        self.qtgui_waterfall_sink_x_0.set_frequency_range(0, self.samp_rate)
 
 
 
 
-def main(top_block_cls=synchronization, options=None):
+def main(top_block_cls=binary_mod_test, options=None):
 
     if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
         style = gr.prefs().get_string('qtgui', 'style', 'raster')

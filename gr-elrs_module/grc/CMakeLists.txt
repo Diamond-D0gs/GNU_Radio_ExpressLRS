@@ -11,5 +11,6 @@ install(FILES
     elrs_module_elrs_transmitter.block.yml
     elrs_module_lora_rx_mod.block.yml
     elrs_module_lora_tx_mod.block.yml
+    elrs_module_mock_elrs_sender.block.yml
     DESTINATION share/gnuradio/grc/blocks
 )
