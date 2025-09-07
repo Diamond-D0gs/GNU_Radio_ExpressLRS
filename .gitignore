@@ -1,3 +1,2 @@
-gr-elrs_module/build
-gr-elrs_module/examples
-gr_debug
+.vscode
+__pycache__

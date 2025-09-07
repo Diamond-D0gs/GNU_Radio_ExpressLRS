@@ -1,0 +1,526 @@
+options:
+  parameters:
+    author: Gabriel Garcia
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: no_gui
+    hier_block_src_path: '.:'
+    id: elrs_transmitter_flowgraph
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: ELRS Transmitter Flowgraph
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: bandwidth
+  id: variable
+  parameters:
+    comment: ''
+    value: 125e3
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [296, 12.0]
+    rotation: 0
+    state: enabled
+- name: binding_phrase
+  id: variable
+  parameters:
+    comment: ''
+    value: '"TestBindingPhrase"'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [952, 12.0]
+    rotation: 0
+    state: enabled
+- name: counter
+  id: variable
+  parameters:
+    comment: ''
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1112, 12.0]
+    rotation: 0
+    state: enabled
+- name: cr
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [480, 12.0]
+    rotation: 0
+    state: enabled
+- name: crc
+  id: variable
+  parameters:
+    comment: ''
+    value: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [560, 12.0]
+    rotation: 0
+    state: enabled
+- name: disable
+  id: variable
+  parameters:
+    comment: ''
+    value: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1008, 100.0]
+    rotation: 0
+    state: enabled
+- name: freq_center
+  id: variable
+  parameters:
+    comment: ''
+    value: '914700000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [672, 100.0]
+    rotation: 0
+    state: enabled
+- name: freq_count
+  id: variable
+  parameters:
+    comment: ''
+    value: '20'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [848, 12.0]
+    rotation: 0
+    state: enabled
+- name: freq_start
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center - (wide_samp_rate // 2)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 12.0]
+    rotation: 0
+    state: enabled
+- name: freq_stop
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center + (wide_samp_rate // 2)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [664, 12.0]
+    rotation: 0
+    state: enabled
+- name: freq_temp
+  id: variable
+  parameters:
+    comment: ''
+    value: freq_center
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [904, 100.0]
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: bandwidth*2
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 12.0]
+    rotation: 0
+    state: enabled
+- name: sf
+  id: variable
+  parameters:
+    comment: ''
+    value: '7'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [400, 12.0]
+    rotation: 0
+    state: enabled
+- name: wide_samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: 926900000 - 903500000
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [776, 100.0]
+    rotation: 0
+    state: enabled
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: '1'
+    comment: ''
+    freq: freq_temp
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0'
+    samp_rate: wide_samp_rate
+    type: complex
+    waveform: analog.GR_COS_WAVE
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [848, 348.0]
+    rotation: 0
+    state: enabled
+- name: blocks_message_strobe_0
+  id: blocks_message_strobe
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    msg: pmt.intern("")
+    period: 1000 // 25
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [64, 244.0]
+    rotation: 0
+    state: enabled
+- name: blocks_msgpair_to_var_0
+  id: blocks_msgpair_to_var
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    target: freq_temp
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [648, 388.0]
+    rotation: 0
+    state: enabled
+- name: blocks_multiply_xx_0
+  id: blocks_multiply_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1104, 248.0]
+    rotation: 0
+    state: enabled
+- name: blocks_null_sink_0
+  id: blocks_null_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bus_structure_sink: '[[0,],]'
+    comment: ''
+    num_inputs: '1'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1280, 176.0]
+    rotation: 0
+    state: disabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import pmt\nimport numpy as np\nfrom gnuradio import gr\nfrom hashlib\
+      \ import md5\n\nclass fhss_controller(gr.sync_block):\n    # This is the corrected\
+      \ line with default values\n    def __init__(self, binding_phrase=\"\", freq_start=0.0,\
+      \ freq_stop=0.0, freq_count=1, freq_center=0.0, disable=False):\n        gr.sync_block.__init__(self,\n\
+      \            name='FHSS Controller',\n            in_sig=None,\n           \
+      \ out_sig=None)\n        \n        # Store parameters passed from GRC\n    \
+      \    self.binding_phrase = binding_phrase\n        self.freq_start = freq_start\n\
+      \        self.freq_stop = freq_stop\n        self.freq_count = freq_count\n\
+      \        self.freq_center = freq_center\n        self.disable = disable\n\n\
+      \        # Register message ports\n        self.message_port_register_in(pmt.intern(\"\
+      msg_in\"))\n        self.message_port_register_out(pmt.intern(\"msg_out\"))\n\
+      \        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\n \
+      \       # --- Setup logic from your script ---\n        self.FHSS_SEQUENCE_LEN\
+      \ = 256\n        self.OTA_VERSION_ID = 6\n        \n        if self.freq_count\
+      \ > 1:\n            self.freq_spread = abs(self.freq_stop - self.freq_start)\
+      \ // (self.freq_count - 1)\n        else:\n            self.freq_spread = 0\
+      \ # Provide a safe default\n\n        # Add another check for the next line\n\
+      \        if self.freq_count > 0:\n            self.num_primary_bands = (self.FHSS_SEQUENCE_LEN\
+      \ // self.freq_count) * self.freq_count\n        else:\n            self.num_primary_bands\
+      \ = 0 # Provide a safe default\n\n        uid_bytes = md5(self.binding_phrase.encode()).digest()[0:6]\n\
+      \        self.seed = (uid_bytes[2] << 24) | (uid_bytes[3] << 16) | (uid_bytes[4]\
+      \ << 8) | (uid_bytes[5] ^ self.OTA_VERSION_ID)\n        self.freq_sequence =\
+      \ [0] * self.FHSS_SEQUENCE_LEN\n        self.fhss_index = 0\n        \n    \
+      \    self.build_random_fhss_sequence()\n\n    def elrs_rng(self):\n        self.seed\
+      \ = (0x343FD * self.seed + 0x269EC3) % 0x80000000\n        return self.seed\
+      \ >> 16\n    \n    def build_random_fhss_sequence(self):\n        # Only build\
+      \ if freq_count is valid\n        if self.freq_count < 2: return\n\n       \
+      \ for i in range(self.num_primary_bands):\n            self.freq_sequence[i]\
+      \ = i % self.freq_count\n        \n        for i in range(1, self.num_primary_bands):\n\
+      \             if (i % self.freq_count) != 0:\n                offset = (i //\
+      \ self.freq_count) * self.freq_count\n                rand = (self.elrs_rng()\
+      \ % (self.freq_count - 1)) + 1\n                self.freq_sequence[i], self.freq_sequence[offset\
+      \ + rand] = self.freq_sequence[offset + rand], self.freq_sequence[i]\n\n   \
+      \ def handle_msg(self, msg):\n        if not self.disable:\n            current_freq_index\
+      \ = self.freq_sequence[self.fhss_index]\n            absolute_freq = self.freq_start\
+      \ + (current_freq_index * self.freq_spread)\n            freq_offset = absolute_freq\
+      \ - self.freq_center\n\n            key = pmt.intern(\"freq_temp\")\n      \
+      \      value = pmt.from_double(freq_offset + 3.7e6) # Temp fix\n           \
+      \ output_msg = pmt.cons(key, value)\n\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n            \n            self.fhss_index = (self.fhss_index\
+      \ + 1) % self.freq_count\n        else:\n            key = pmt.intern(\"freq_temp\"\
+      )\n            value = pmt.from_double(self.freq_center + 3.7e6) # Temp fix\n\
+      \            output_msg = pmt.cons(key, value)\n\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n\n\n    def work(self, input_items, output_items):\n\
+      \        return 0"
+    affinity: ''
+    alias: ''
+    binding_phrase: binding_phrase
+    comment: ''
+    disable: disable
+    freq_center: freq_center
+    freq_count: freq_count
+    freq_start: freq_start
+    freq_stop: freq_stop
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('FHSS Controller', 'fhss_controller', [('binding_phrase', "''"), ('freq_start',
+      '0.0'), ('freq_stop', '0.0'), ('freq_count', '1'), ('freq_center', '0.0'), ('disable',
+      'False')], [('msg_in', 'message', 1)], [('msg_out', 'message', 1)], '', ['binding_phrase',
+      'disable', 'freq_center', 'freq_count', 'freq_start', 'freq_stop'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [336, 348.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_2
+  id: epy_block
+  parameters:
+    _source_code: "import pmt\nimport time\nimport ctypes\nimport numpy as np\nfrom\
+      \ hashlib import md5\nfrom gnuradio import gr\nfrom pathlib import Path\nfrom\
+      \ typing import Optional, TextIO\n\nclass Crc2Byte:\n    _CRCTAB_LEN = 256\n\
+      \n    def __init__(self, bits: int, poly: int):\n        if not (8 <= bits <=\
+      \ 16):\n            raise ValueError(\"CRC bit-width must be between 8 and 16.\"\
+      )\n\n        self.bits = bits\n        self.poly = poly\n        self.bitmask\
+      \ = (1 << self.bits) - 1\n        \n        # Pre-compute the CRC lookup table\n\
+      \        self.crctab = self._generate_table()\n\n    def _generate_table(self)\
+      \ -> list[int]:\n        crctab = [0] * self._CRCTAB_LEN\n        highbit =\
+      \ 1 << (self.bits - 1)\n\n        for i in range(self._CRCTAB_LEN):\n      \
+      \      crc = i << (self.bits - 8)\n            for _ in range(8):\n        \
+      \        if crc & highbit:\n                    crc = (crc << 1) ^ self.poly\n\
+      \                else:\n                    crc = crc << 1\n            crctab[i]\
+      \ = crc & self.bitmask\n        return crctab\n\n    def calc(self, data: bytes,\
+      \ initial_crc: int = 0) -> int:\n        crc = initial_crc\n\n        for byte\
+      \ in data:\n            lookup_index = ((crc >> (self.bits - 8)) ^ byte) & 0xFF\n\
+      \            crc = (crc << 8) ^ self.crctab[lookup_index]\n\n        return\
+      \ crc & self.bitmask\n\n# The final, top-level packet structure\nclass OTA_Packet4_s(ctypes.Structure):\n\
+      \    \"\"\"\n    Main packet structure corresponding to OTA_Packet4_s.\n   \
+      \ \"\"\"\n    _pack_ = 1\n    _fields_ = [\n        # First byte: type and crcHigh\n\
+      \        (\"type\", ctypes.c_uint8, 2),\n        (\"crcHigh\", ctypes.c_uint8,\
+      \ 6),\n        # Main payload union (6 bytes)\n        (\"payload\", ctypes.c_uint8\
+      \ * 6),\n        # Last byte: crcLow\n        (\"crcLow\", ctypes.c_uint8),\n\
+      \    ]\n\nclass elrs_transmitter_data_gen(gr.sync_block):\n    \"\"\"\n    Receives\
+      \ a trigger message. On each trigger, it formats a string\n    with the value\
+      \ of a 'counter' variable from the top_block,\n    sends it as a new message,\
+      \ and increments the counter.\n    \"\"\"\n    def __init__(self, bindingPhrase:\
+      \ str='DefaultBindingPhrase', filepath: str='', loopFile:bool =False):\n   \
+      \     gr.sync_block.__init__(self,\n            name='ELRS Transmitter Data\
+      \ Gen',\n            in_sig=None,\n            out_sig=None)\n        \n   \
+      \     self.filepath_str = filepath\n        self.filepath = Path(filepath)\n\
+      \        self.file: Optional[TextIO] = None\n        self.crc_calc = Crc2Byte(16,\
+      \ 0x3D65)\n        self.loop_file: bool = loopFile\n        self.done: bool\
+      \ = False\n\n        self.packet_datas: list[bytes] = []\n        self.packet_datas_pos\
+      \ = 0\n\n        uid = md5(str(f'-DMY_BINDING_PHRASE=\"{bindingPhrase}\"').encode('utf-8')).digest()[:6]\n\
+      \        self.ota_crc = ((uid[4] << 8) | uid[5]) ^ 4\n        \n        self.message_port_register_in(pmt.intern(\"\
+      msg_in\"))\n        self.message_port_register_out(pmt.intern(\"msg_out\"))\n\
+      \        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\n \
+      \   def handle_msg(self, msg):\n        if not self.done:\n            # 1.\
+      \ Read current payload\n            curr_bytes = self.packet_datas[self.packet_datas_pos][:6]\n\
+      \            self.packet_datas_pos += 1\n            if self.packet_datas_pos\
+      \ == len(self.packet_datas):\n                if self.loop_file:\n         \
+      \           self.packet_datas_pos = 0\n                else:\n             \
+      \       self.done = True\n\n            # 2. Calculate CRC\n            crc\
+      \ = self.crc_calc.calc(curr_bytes, self.ota_crc)\n            \n           \
+      \ # 3. Convert hex byte stream to bytearray\n            backing_buffer = bytearray(ctypes.sizeof(OTA_Packet4_s))\n\
+      \            ota_packet = OTA_Packet4_s.from_buffer(backing_buffer)\n      \
+      \      ota_packet.crcHigh = crc >> 8\n            ota_packet.crcLow = crc &\
+      \ 0xFF\n            ota_packet.payload[:] = curr_bytes\n\n            # 4. Create\
+      \ the new PMT message\n            output_msg = pmt.init_u8vector(len(backing_buffer),\
+      \ backing_buffer)\n\n            # 5. Publish the new message\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n\n    def start(self) -> bool:\n        if not self.filepath.is_file():\n\
+      \            print(f'ELRS Transmitter Data Gen: \\'{self.filepath_str}\\' is\
+      \ not a valid filepath!')\n            return False\n        \n        try:\n\
+      \            with open(self.filepath, 'r', encoding='utf-8') as file:\n    \
+      \            curr_line = file.readline()\n                while len(curr_line)\
+      \ != 0:\n                    self.packet_datas.append(bytes.fromhex(curr_line))\n\
+      \                    curr_line = file.readline()\n        except Exception as\
+      \ e:\n            print('ELRS Transmitter Data Gen: Exception occured while\
+      \ trying to open file.\\n', e)\n            return False\n\n        return True\n\
+      \n    def stop(self) -> bool:\n        return True\n\n    def work(self, input_items,\
+      \ output_items):\n        # This block only processes messages, so work() does\
+      \ nothing.\n        return 0"
+    affinity: ''
+    alias: ''
+    bindingPhrase: binding_phrase
+    comment: ''
+    filepath: '''/home/gabriel/GNU_Radio_ExpressLRS/test.txt'''
+    loopFile: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: ('ELRS Transmitter Data Gen', 'elrs_transmitter_data_gen', [('bindingPhrase',
+      "'DefaultBindingPhrase'"), ('filepath', "''"), ('loopFile', 'False')], [('msg_in',
+      'message', 1)], [('msg_out', 'message', 1)], "\n    Receives a trigger message.
+      On each trigger, it formats a string\n    with the value of a 'counter' variable
+      from the top_block,\n    sends it as a new message, and increments the counter.\n    ",
+      ['filepath'])
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [320, 236.0]
+    rotation: 0
+    state: true
+- name: lora_sdr_lora_tx_mod_0
+  id: lora_sdr_lora_tx_mod
+  parameters:
+    affinity: ''
+    alias: ''
+    bw: int(bandwidth)
+    comment: ''
+    cr: '1'
+    frame_zero_padd: '128'
+    has_crc: 'False'
+    impl_head: 'True'
+    ldro: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: int(samp_rate)
+    sf: sf
+    sync_word: '[0x12]'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [624, 196.0]
+    rotation: 0
+    state: true
+- name: network_udp_sink_1
+  id: network_udp_sink
+  parameters:
+    addr: 127.0.0.1
+    affinity: ''
+    alias: ''
+    comment: ''
+    header: '0'
+    payloadsize: '1472'
+    port: '1234'
+    send_eof: 'False'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1256, 228.0]
+    rotation: 0
+    state: enabled
+- name: rational_resampler_xxx_0
+  id: rational_resampler_xxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    decim: '5'
+    fbw: '0.0'
+    interp: '448'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    taps: '[]'
+    type: ccc
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [880, 220.0]
+    rotation: 0
+    state: enabled
+
+connections:
+- [analog_sig_source_x_0, '0', blocks_multiply_xx_0, '1']
+- [blocks_message_strobe_0, strobe, epy_block_0, msg_in]
+- [blocks_message_strobe_0, strobe, epy_block_2, msg_in]
+- [blocks_multiply_xx_0, '0', blocks_null_sink_0, '0']
+- [blocks_multiply_xx_0, '0', network_udp_sink_1, '0']
+- [epy_block_0, msg_out, blocks_msgpair_to_var_0, inpair]
+- [epy_block_2, msg_out, lora_sdr_lora_tx_mod_0, in]
+- [lora_sdr_lora_tx_mod_0, '0', rational_resampler_xxx_0, '0']
+- [rational_resampler_xxx_0, '0', blocks_multiply_xx_0, '0']
+
+metadata:
+  file_format: 1
