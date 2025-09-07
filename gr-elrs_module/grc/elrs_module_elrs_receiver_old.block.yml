@@ -1,11 +1,12 @@
-id: elrs_module_elrs_transmitter
-label: ELRS Transmitter
+id: elrs_module_elrs_receiver
+label: ELRS Receiver
 category: '[elrs_module]'
 
 templates:
   imports: from gnuradio import elrs_module
-  make: elrs_module.elrs_transmitter(domain=${domain}, packet_rate=${packet_rate}, binding_phrase=${binding_phrase})
+  make: elrs_module.elrs_receiver(domain=${domain}, packet_rate=${packet_rate}, binding_phrase=${binding_phrase})
 
+# 'parameters' list for every value settable from the GRC GUI.
 parameters:
 - id: domain
   label: Domain
@@ -16,7 +17,7 @@ parameters:
   option_labels: ['AU915', 'FCC915', 'EU868', 'IN866', 'AU433', 'EU433', 'US433', 'US433W', 'ISM2G4']
 
 - id: packet_rate
-  label: Packet Rate
+  label: Packet Rate (Hz)
   dtype: int
   default: 25
   # Based on common ELRS packet rates, creating an enum
@@ -28,15 +29,22 @@ parameters:
   dtype: string
   default: '"DefaultBindingPhrase"'
 
+# Define the block's ports based on the signature from your Python code.
 inputs:
 - label: in
-  domain: message
-  id: in
+  domain: stream
+  dtype: complex
 
 outputs:
 - label: out
-  domain: message
-  id: out
+  domain: stream
+  dtype: complex
+
+# - label: freq_center
+#   domain: message  # The key that tells GRC this is a message port
+
+# - label: freq_range
+#   domain: message
 
 # 'file_format' specifies the GRC yml format version.
 file_format: 1

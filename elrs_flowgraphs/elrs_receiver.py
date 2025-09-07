@@ -5,7 +5,8 @@
 # SPDX-License-Identifier: GPL-3.0
 #
 # GNU Radio Python Flow Graph
-# Title: Not titled yet
+# Title: ELRS Receiver
+# Author: Gabriel Garcia
 # GNU Radio version: 3.10.1.1
 
 from packaging.version import Version as StrictVersion
@@ -26,7 +27,6 @@ from gnuradio.filter import firdes
 import sip
 from gnuradio import analog
 from gnuradio import blocks
-import pmt
 from gnuradio import filter
 from gnuradio import gr
 from gnuradio.fft import window
@@ -35,21 +35,21 @@ import signal
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
-from gnuradio import iio
-import elrs_transmitter_epy_block_0_0 as epy_block_0_0  # embedded python block
-import elrs_transmitter_epy_block_1 as epy_block_1  # embedded python block
-import gnuradio.lora_sdr as lora_sdr
+from gnuradio import network
+from gnuradio.elrs_module.lora_sdr_lora_rx_mod import lora_sdr_lora_rx_mod
+import elrs_receiver_epy_block_0 as epy_block_0  # embedded python block
+import elrs_receiver_epy_block_2 as epy_block_2  # embedded python block
 
 
 
 from gnuradio import qtgui
 
-class elrs_transmitter(gr.top_block, Qt.QWidget):
+class elrs_receiver(gr.top_block, Qt.QWidget):
 
     def __init__(self):
-        gr.top_block.__init__(self, "Not titled yet", catch_exceptions=True)
+        gr.top_block.__init__(self, "ELRS Receiver", catch_exceptions=True)
         Qt.QWidget.__init__(self)
-        self.setWindowTitle("Not titled yet")
+        self.setWindowTitle("ELRS Receiver")
         qtgui.util.check_set_qss()
         try:
             self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
@@ -67,7 +67,7 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "elrs_transmitter")
+        self.settings = Qt.QSettings("GNU Radio", "elrs_receiver")
 
         try:
             if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
@@ -80,17 +80,16 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.wide_samp_rate = wide_samp_rate = 2e5
+        self.wide_samp_rate = wide_samp_rate = 926900000 - 903500000
         self.freq_center = freq_center = 914700000
-        self.bandwidth = bandwidth = 8e3
+        self.bandwidth = bandwidth = 125e3
         self.sf = sf = 7
-        self.sdr_buffer_size = sdr_buffer_size = 4096
         self.samp_rate = samp_rate = bandwidth*2
         self.freq_temp = freq_temp = freq_center
         self.freq_stop = freq_stop = freq_center + (wide_samp_rate // 2)
         self.freq_start = freq_start = freq_center - (wide_samp_rate // 2)
         self.freq_count = freq_count = 20
-        self.disable = disable = False
+        self.disable = disable = True
         self.crc = crc = False
         self.cr = cr = 1
         self.counter = counter = 0
@@ -99,13 +98,13 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
-        self.rational_resampler_xxx_0 = filter.rational_resampler_ccc(
-                interpolation=25,
-                decimation=2,
+        self.rational_resampler_xxx_0_0 = filter.rational_resampler_ccc(
+                interpolation=5,
+                decimation=448,
                 taps=[],
                 fractional_bw=0)
-        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
-            1024, #size
+        self.qtgui_waterfall_sink_x_0_0 = qtgui.waterfall_sink_c(
+            512, #size
             window.WIN_RECTANGULAR, #wintype
             (freq_stop + freq_start) / 2, #fc
             freq_stop - freq_start, #bw
@@ -113,7 +112,42 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
             1, #number of inputs
             None # parent
         )
-        self.qtgui_waterfall_sink_x_0.set_update_time(0.0001)
+        self.qtgui_waterfall_sink_x_0_0.set_update_time(0.01)
+        self.qtgui_waterfall_sink_x_0_0.enable_grid(False)
+        self.qtgui_waterfall_sink_x_0_0.enable_axis_labels(True)
+
+
+
+        labels = ['', '', '', '', '',
+                  '', '', '', '', '']
+        colors = [0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+
+        for i in range(1):
+            if len(labels[i]) == 0:
+                self.qtgui_waterfall_sink_x_0_0.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_waterfall_sink_x_0_0.set_line_label(i, labels[i])
+            self.qtgui_waterfall_sink_x_0_0.set_color_map(i, colors[i])
+            self.qtgui_waterfall_sink_x_0_0.set_line_alpha(i, alphas[i])
+
+        self.qtgui_waterfall_sink_x_0_0.set_intensity_range(-140, 0)
+
+        self._qtgui_waterfall_sink_x_0_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0_0.qwidget(), Qt.QWidget)
+
+        self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_0_win)
+        self.qtgui_waterfall_sink_x_0 = qtgui.waterfall_sink_c(
+            512, #size
+            window.WIN_RECTANGULAR, #wintype
+            (freq_stop + freq_start) / 2, #fc
+            bandwidth, #bw
+            "", #name
+            1, #number of inputs
+            None # parent
+        )
+        self.qtgui_waterfall_sink_x_0.set_update_time(0.01)
         self.qtgui_waterfall_sink_x_0.enable_grid(False)
         self.qtgui_waterfall_sink_x_0.enable_axis_labels(True)
 
@@ -139,63 +173,43 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self._qtgui_waterfall_sink_x_0_win = sip.wrapinstance(self.qtgui_waterfall_sink_x_0.qwidget(), Qt.QWidget)
 
         self.top_layout.addWidget(self._qtgui_waterfall_sink_x_0_win)
-        self.lora_tx_0 = lora_sdr.lora_sdr_lora_tx(
-            bw=int(bandwidth),
+        self.network_udp_source_0 = network.udp_source(gr.sizeof_gr_complex, 1, 1234, 0, 1472, True, True, False)
+        self.lora_sdr_lora_rx_mod_0 = lora_sdr_lora_rx_mod(
+            center_freq=868100000,
+            bw=125000,
             cr=1,
-            has_crc=True,
+            has_crc=False,
             impl_head=True,
-            samp_rate=int(samp_rate),
+            pay_len=8,
+            samp_rate=250000,
             sf=7,
-         ldro_mode=2,frame_zero_padd=1280,sync_word=[0x12] )
-        self.lora_rx_0 = lora_sdr.lora_sdr_lora_rx( bw=int(bandwidth), cr=1, has_crc=True, impl_head=False, pay_len=255, samp_rate=int(samp_rate), sf=7, sync_word=[0x12], soft_decoding=True, ldro_mode=2, print_rx=[True,True])
-        self.iio_pluto_source_0 = iio.fmcomms2_source_fc32('ip:192.168.2.1' if 'ip:192.168.2.1' else iio.get_pluto_uri(), [True, True], sdr_buffer_size)
-        self.iio_pluto_source_0.set_len_tag_key('packet_len')
-        self.iio_pluto_source_0.set_frequency(int(freq_temp))
-        self.iio_pluto_source_0.set_samplerate(int(wide_samp_rate))
-        self.iio_pluto_source_0.set_gain_mode(0, 'fast_attack')
-        self.iio_pluto_source_0.set_gain(0, 64)
-        self.iio_pluto_source_0.set_quadrature(True)
-        self.iio_pluto_source_0.set_rfdc(True)
-        self.iio_pluto_source_0.set_bbdc(True)
-        self.iio_pluto_source_0.set_filter_params('Auto', '', 0, 0)
-        self.iio_pluto_sink_0 = iio.fmcomms2_sink_fc32('ip:192.168.2.1' if 'ip:192.168.2.1' else iio.get_pluto_uri(), [True, True], sdr_buffer_size, False)
-        self.iio_pluto_sink_0.set_len_tag_key('')
-        self.iio_pluto_sink_0.set_bandwidth(int(wide_samp_rate))
-        self.iio_pluto_sink_0.set_frequency(int(freq_temp))
-        self.iio_pluto_sink_0.set_samplerate(int(wide_samp_rate))
-        self.iio_pluto_sink_0.set_attenuation(0, 50.0)
-        self.iio_pluto_sink_0.set_filter_params('Auto', '', 0, 0)
-        self.epy_block_1 = epy_block_1.counter_formatter()
-        self.epy_block_0_0 = epy_block_0_0.fhss_controller(binding_phrase=binding_phrase, freq_start=freq_start, freq_stop=freq_stop, freq_count=freq_count, freq_center=freq_center, disable=disable)
-        self.blocks_multiply_xx_1 = blocks.multiply_vcc(1)
-        self.blocks_multiply_xx_0 = blocks.multiply_vcc(1)
-        self.blocks_msgpair_to_var_0_0 = blocks.msg_pair_to_var(self.set_freq_temp)
-        self.blocks_message_strobe_0 = blocks.message_strobe(pmt.intern(""), 1000)
+            sync_word=[0x12],
+            soft_decoding=False,
+            ldro_mode=2
+        )
+        self.epy_block_2 = epy_block_2.elrs_receiver_data_gen(bindingPhrase=binding_phrase, filepath='/home/gabriel/GNU_Radio_ExpressLRS/test.txt', loopFile=True)
+        self.epy_block_0 = epy_block_0.fhss_controller(binding_phrase=binding_phrase, freq_start=freq_start, freq_stop=freq_stop, freq_count=freq_count, freq_center=freq_center, disable=disable)
+        self.blocks_msgpair_to_var_0 = blocks.msg_pair_to_var(self.set_freq_temp)
         self.blocks_divide_xx_0 = blocks.divide_cc(1)
-        self.analog_sig_source_x_0 = analog.sig_source_c(wide_samp_rate, analog.GR_COS_WAVE, freq_temp - 3.7e3, 1, 0, 0)
+        self.analog_sig_source_x_0 = analog.sig_source_c(wide_samp_rate, analog.GR_COS_WAVE, freq_temp, 1, 0, 0)
 
 
         ##################################################
         # Connections
         ##################################################
-        self.msg_connect((self.blocks_message_strobe_0, 'strobe'), (self.epy_block_1, 'msg_in'))
-        self.msg_connect((self.epy_block_0_0, 'msg_out'), (self.blocks_msgpair_to_var_0_0, 'inpair'))
-        self.msg_connect((self.epy_block_1, 'msg_out'), (self.epy_block_0_0, 'msg_in'))
-        self.msg_connect((self.epy_block_1, 'msg_out'), (self.lora_tx_0, 'in'))
+        self.msg_connect((self.epy_block_0, 'msg_out'), (self.blocks_msgpair_to_var_0, 'inpair'))
+        self.msg_connect((self.lora_sdr_lora_rx_mod_0, 'out'), (self.epy_block_0, 'msg_in'))
+        self.msg_connect((self.lora_sdr_lora_rx_mod_0, 'out'), (self.epy_block_2, 'msg_in'))
         self.connect((self.analog_sig_source_x_0, 0), (self.blocks_divide_xx_0, 1))
-        self.connect((self.analog_sig_source_x_0, 0), (self.blocks_multiply_xx_0, 1))
-        self.connect((self.analog_sig_source_x_0, 0), (self.blocks_multiply_xx_1, 1))
-        self.connect((self.blocks_divide_xx_0, 0), (self.lora_rx_0, 0))
-        self.connect((self.blocks_divide_xx_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
-        self.connect((self.blocks_multiply_xx_1, 0), (self.iio_pluto_sink_0, 0))
-        self.connect((self.iio_pluto_source_0, 0), (self.blocks_divide_xx_0, 0))
-        self.connect((self.lora_tx_0, 0), (self.blocks_multiply_xx_1, 0))
-        self.connect((self.lora_tx_0, 0), (self.rational_resampler_xxx_0, 0))
-        self.connect((self.rational_resampler_xxx_0, 0), (self.blocks_multiply_xx_0, 0))
+        self.connect((self.blocks_divide_xx_0, 0), (self.rational_resampler_xxx_0_0, 0))
+        self.connect((self.network_udp_source_0, 0), (self.blocks_divide_xx_0, 0))
+        self.connect((self.network_udp_source_0, 0), (self.qtgui_waterfall_sink_x_0_0, 0))
+        self.connect((self.rational_resampler_xxx_0_0, 0), (self.lora_sdr_lora_rx_mod_0, 0))
+        self.connect((self.rational_resampler_xxx_0_0, 0), (self.qtgui_waterfall_sink_x_0, 0))
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "elrs_transmitter")
+        self.settings = Qt.QSettings("GNU Radio", "elrs_receiver")
         self.settings.setValue("geometry", self.saveGeometry())
         self.stop()
         self.wait()
@@ -210,9 +224,6 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self.set_freq_start(self.freq_center - (self.wide_samp_rate // 2))
         self.set_freq_stop(self.freq_center + (self.wide_samp_rate // 2))
         self.analog_sig_source_x_0.set_sampling_freq(self.wide_samp_rate)
-        self.iio_pluto_sink_0.set_bandwidth(int(self.wide_samp_rate))
-        self.iio_pluto_sink_0.set_samplerate(int(self.wide_samp_rate))
-        self.iio_pluto_source_0.set_samplerate(int(self.wide_samp_rate))
 
     def get_freq_center(self):
         return self.freq_center
@@ -222,7 +233,7 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
         self.set_freq_start(self.freq_center - (self.wide_samp_rate // 2))
         self.set_freq_stop(self.freq_center + (self.wide_samp_rate // 2))
         self.set_freq_temp(self.freq_center)
-        self.epy_block_0_0.freq_center = self.freq_center
+        self.epy_block_0.freq_center = self.freq_center
 
     def get_bandwidth(self):
         return self.bandwidth
@@ -230,18 +241,13 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
     def set_bandwidth(self, bandwidth):
         self.bandwidth = bandwidth
         self.set_samp_rate(self.bandwidth*2)
+        self.qtgui_waterfall_sink_x_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.bandwidth)
 
     def get_sf(self):
         return self.sf
 
     def set_sf(self, sf):
         self.sf = sf
-
-    def get_sdr_buffer_size(self):
-        return self.sdr_buffer_size
-
-    def set_sdr_buffer_size(self, sdr_buffer_size):
-        self.sdr_buffer_size = sdr_buffer_size
 
     def get_samp_rate(self):
         return self.samp_rate
@@ -254,39 +260,39 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
 
     def set_freq_temp(self, freq_temp):
         self.freq_temp = freq_temp
-        self.analog_sig_source_x_0.set_frequency(self.freq_temp - 3.7e3)
-        self.iio_pluto_sink_0.set_frequency(int(self.freq_temp))
-        self.iio_pluto_source_0.set_frequency(int(self.freq_temp))
+        self.analog_sig_source_x_0.set_frequency(self.freq_temp)
 
     def get_freq_stop(self):
         return self.freq_stop
 
     def set_freq_stop(self, freq_stop):
         self.freq_stop = freq_stop
-        self.epy_block_0_0.freq_stop = self.freq_stop
-        self.qtgui_waterfall_sink_x_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.freq_stop - self.freq_start)
+        self.epy_block_0.freq_stop = self.freq_stop
+        self.qtgui_waterfall_sink_x_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.bandwidth)
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.freq_stop - self.freq_start)
 
     def get_freq_start(self):
         return self.freq_start
 
     def set_freq_start(self, freq_start):
         self.freq_start = freq_start
-        self.epy_block_0_0.freq_start = self.freq_start
-        self.qtgui_waterfall_sink_x_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.freq_stop - self.freq_start)
+        self.epy_block_0.freq_start = self.freq_start
+        self.qtgui_waterfall_sink_x_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.bandwidth)
+        self.qtgui_waterfall_sink_x_0_0.set_frequency_range((self.freq_stop + self.freq_start) / 2, self.freq_stop - self.freq_start)
 
     def get_freq_count(self):
         return self.freq_count
 
     def set_freq_count(self, freq_count):
         self.freq_count = freq_count
-        self.epy_block_0_0.freq_count = self.freq_count
+        self.epy_block_0.freq_count = self.freq_count
 
     def get_disable(self):
         return self.disable
 
     def set_disable(self, disable):
         self.disable = disable
-        self.epy_block_0_0.disable = self.disable
+        self.epy_block_0.disable = self.disable
 
     def get_crc(self):
         return self.crc
@@ -311,12 +317,12 @@ class elrs_transmitter(gr.top_block, Qt.QWidget):
 
     def set_binding_phrase(self, binding_phrase):
         self.binding_phrase = binding_phrase
-        self.epy_block_0_0.binding_phrase = self.binding_phrase
+        self.epy_block_0.binding_phrase = self.binding_phrase
 
 
 
 
-def main(top_block_cls=elrs_transmitter, options=None):
+def main(top_block_cls=elrs_receiver, options=None):
 
     if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
         style = gr.prefs().get_string('qtgui', 'style', 'raster')

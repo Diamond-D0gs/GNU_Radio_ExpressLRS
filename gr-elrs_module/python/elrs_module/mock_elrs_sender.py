@@ -65,7 +65,8 @@ class MockELRSSender(gr.sync_block):
         
         time.sleep(0.1)
 
-        self.file.close()
+        if self.file is not None:
+            self.file.close()
 
         return True
 

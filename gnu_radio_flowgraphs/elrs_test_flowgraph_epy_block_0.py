@@ -2,6 +2,7 @@ import pmt
 import numpy as np
 from gnuradio import gr
 from hashlib import md5
+from threading import Lock
 
 class fhss_controller(gr.sync_block):
     # This is the corrected line with default values
@@ -18,11 +19,18 @@ class fhss_controller(gr.sync_block):
         self.freq_count = freq_count
         self.freq_center = freq_center
         self.disable = disable
+        self.counter = 0
+
+        self.lock = Lock()
+        self.started = False
 
         # Register message ports
-        self.message_port_register_in(pmt.intern("msg_in"))
+        self.message_port_register_in(pmt.intern("start"))
+        self.message_port_register_in(pmt.intern("trigger_in"))
         self.message_port_register_out(pmt.intern("msg_out"))
-        self.set_msg_handler(pmt.intern("msg_in"), self.handle_msg)
+        self.message_port_register_out(pmt.intern("freq_out"))
+        self.set_msg_handler(pmt.intern("start"), self._handle_start)
+        self.set_msg_handler(pmt.intern("trigger_in"), self.handle_msg)
 
         # --- Setup logic from your script ---
         self.FHSS_SEQUENCE_LEN = 256
@@ -64,22 +72,35 @@ class fhss_controller(gr.sync_block):
                 self.freq_sequence[i], self.freq_sequence[offset + rand] = self.freq_sequence[offset + rand], self.freq_sequence[i]
 
     def handle_msg(self, msg):
+        with self.lock:
+            if not self.started:
+                return
+
         if not self.disable:
             current_freq_index = self.freq_sequence[self.fhss_index]
             absolute_freq = self.freq_start + (current_freq_index * self.freq_spread)
-        else:
-            absolute_freq = self.freq_center
+            freq_offset = absolute_freq - self.freq_center
 
             key = pmt.intern("freq_temp")
-            value = pmt.from_double(absolute_freq)
+            value = pmt.from_double(freq_offset + 3.7e6) # Temp fix
             output_msg = pmt.cons(key, value)
 
-            self.message_port_pub(pmt.intern("msg_out"), output_msg)
+            self.message_port_pub(pmt.intern("freq_out"), output_msg)
             
-        if not self.disable:
             self.fhss_index = (self.fhss_index + 1) % self.freq_count
+        else:
+            key = pmt.intern("freq_temp")
+            value = pmt.from_double(self.freq_center + 3.7e6) # Temp fix
+            output_msg = pmt.cons(key, value)
 
-        print(f"\nCurrent frequency: {int(absolute_freq)}")
+            self.message_port_pub(pmt.intern("freq_out"), output_msg)
+
+        self.message_port_pub(pmt.intern("msg_out"), pmt.intern(f'Test: {self.counter}'))
+        self.counter += 1
+
+    def _handle_start(self, msg):
+        with self.lock:
+            self.started = True
 
     def work(self, input_items, output_items):
         return 0

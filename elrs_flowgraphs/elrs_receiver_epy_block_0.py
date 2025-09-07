@@ -67,19 +67,22 @@ class fhss_controller(gr.sync_block):
         if not self.disable:
             current_freq_index = self.freq_sequence[self.fhss_index]
             absolute_freq = self.freq_start + (current_freq_index * self.freq_spread)
-        else:
-            absolute_freq = self.freq_center
+            freq_offset = absolute_freq - self.freq_center
 
             key = pmt.intern("freq_temp")
-            value = pmt.from_double(absolute_freq)
+            value = pmt.from_double(freq_offset + 3.7e6) # Temp fix
             output_msg = pmt.cons(key, value)
 
             self.message_port_pub(pmt.intern("msg_out"), output_msg)
             
-        if not self.disable:
             self.fhss_index = (self.fhss_index + 1) % self.freq_count
+        else:
+            key = pmt.intern("freq_temp")
+            value = pmt.from_double(self.freq_center + 3.7e6) # Temp fix
+            output_msg = pmt.cons(key, value)
 
-        print(f"\nCurrent frequency: {int(absolute_freq)}")
+            self.message_port_pub(pmt.intern("msg_out"), output_msg)
+
 
     def work(self, input_items, output_items):
         return 0

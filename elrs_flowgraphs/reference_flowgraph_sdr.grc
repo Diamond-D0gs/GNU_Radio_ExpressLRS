@@ -57,6 +57,18 @@ blocks:
     coordinate: [1304, 28.0]
     rotation: 0
     state: enabled
+- name: buffer_size
+  id: variable
+  parameters:
+    comment: ''
+    value: 2**8
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1456, 124.0]
+    rotation: 0
+    state: true
 - name: counter
   id: variable
   parameters:
@@ -121,7 +133,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: '20'
+    value: '10'
   states:
     bus_sink: false
     bus_source: false
@@ -150,7 +162,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [680, 28.0]
+    coordinate: [672, 28.0]
     rotation: 0
     state: enabled
 - name: freq_temp
@@ -177,18 +189,6 @@ blocks:
     coordinate: [200, 20.0]
     rotation: 0
     state: enabled
-- name: sdr_buffer_size
-  id: variable
-  parameters:
-    comment: ''
-    value: '4096'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1504, 116.0]
-    rotation: 0
-    state: enabled
 - name: sf
   id: variable
   parameters:
@@ -205,7 +205,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: 2e5
+    value: '200000'
   states:
     bus_sink: false
     bus_source: false
@@ -232,7 +232,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [104, 564.0]
+    coordinate: [80, 556.0]
     rotation: 0
     state: enabled
 - name: blocks_divide_xx_0
@@ -250,9 +250,27 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1336, 496.0]
+    coordinate: [1096, 392.0]
     rotation: 0
-    state: true
+    state: enabled
+- name: blocks_file_sink_0
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    comment: ''
+    file: /home/gabriel/GNU_Radio_ExpressLRS/results/elrs_0
+    type: byte
+    unbuffered: 'False'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1760, 380.0]
+    rotation: 0
+    state: enabled
 - name: blocks_message_strobe_0
   id: blocks_message_strobe
   parameters:
@@ -262,15 +280,15 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     msg: pmt.intern("")
-    period: '1000'
+    period: 1000 // 50
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [784, 124.0]
+    coordinate: [768, 132.0]
     rotation: 0
     state: enabled
-- name: blocks_msgpair_to_var_0_0
+- name: blocks_msgpair_to_var_0
   id: blocks_msgpair_to_var
   parameters:
     affinity: ''
@@ -281,7 +299,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [592, 316.0]
+    coordinate: [568, 308.0]
     rotation: 0
     state: enabled
 - name: blocks_multiply_xx_0
@@ -299,28 +317,10 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [536, 464.0]
+    coordinate: [512, 448.0]
     rotation: 0
     state: enabled
-- name: blocks_multiply_xx_1
-  id: blocks_multiply_xx
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    num_inputs: '2'
-    type: complex
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1024, 296.0]
-    rotation: 0
-    state: true
-- name: epy_block_0_0
+- name: epy_block_0
   id: epy_block
   parameters:
     _source_code: "import pmt\nimport numpy as np\nfrom gnuradio import gr\nfrom hashlib\
@@ -389,7 +389,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [296, 276.0]
+    coordinate: [272, 268.0]
     rotation: 0
     state: enabled
 - name: epy_block_1
@@ -399,36 +399,39 @@ blocks:
       \ counter_formatter(gr.sync_block):\n    \"\"\"\n    Receives a trigger message.\
       \ On each trigger, it formats a string\n    with the value of a 'counter' variable\
       \ from the top_block,\n    sends it as a new message, and increments the counter.\n\
-      \    \"\"\"\n    def __init__(self):\n        gr.sync_block.__init__(self,\n\
+      \    \"\"\"\n    def __init__(self, packet_count: int = 999):\n        gr.sync_block.__init__(self,\n\
       \            name='Counter Formatter',\n            in_sig=None,\n         \
-      \   out_sig=None)\n\n        self.counter = 0\n        self.message_port_register_in(pmt.intern(\"\
-      msg_in\"))\n        self.message_port_register_out(pmt.intern(\"msg_out\"))\n\
-      \        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\n \
-      \   def handle_msg(self, msg):\n        # 1. Format the string using the flowgraph's\
-      \ 'counter' variable\n        # Note: self.counter works because the 'counter'\
-      \ Variable block\n        # creates a 'self.counter' attribute on the main flowgraph\
-      \ class.\n        payload_str = \"TEST \" + str(self.counter)\n\n        # 2.\
-      \ Create the new PMT message\n        output_msg = pmt.intern(payload_str)\n\
-      \n        # 3. Publish the new message\n        self.message_port_pub(pmt.intern(\"\
-      msg_out\"), output_msg)\n        \n        # 4. Increment the counter for the\
-      \ next time\n        self.counter += 1\n\n    def work(self, input_items, output_items):\n\
-      \        # This block only processes messages, so work() does nothing.\n   \
-      \     return 0"
+      \   out_sig=None)\n\n        self.counter = 0\n        self.packet_count = packet_count\n\
+      \        self.message_port_register_in(pmt.intern(\"msg_in\"))\n        self.message_port_register_out(pmt.intern(\"\
+      msg_out\"))\n        self.set_msg_handler(pmt.intern(\"msg_in\"), self.handle_msg)\n\
+      \n    def handle_msg(self, msg):\n        if self.counter < self.packet_count:\n\
+      \            # 1. Format the string using the flowgraph's 'counter' variable\n\
+      \            # Note: self.counter works because the 'counter' Variable block\n\
+      \            # creates a 'self.counter' attribute on the main flowgraph class.\n\
+      \            payload_str = str(f'{self.counter:05d}\\n')\n\n            # 2.\
+      \ Create the new PMT message\n            output_msg = pmt.intern(payload_str)\n\
+      \n            # 3. Publish the new message\n            self.message_port_pub(pmt.intern(\"\
+      msg_out\"), output_msg)\n            \n            # 4. Increment the counter\
+      \ for the next time\n            self.counter += 1\n            if self.counter\
+      \ == self.packet_count:\n                print('Counter Formatter: Done.')\n\
+      \n    def work(self, input_items, output_items):\n        # This block only\
+      \ processes messages, so work() does nothing.\n        return 0"
     affinity: ''
     alias: ''
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
+    packet_count: '10000000'
   states:
-    _io_cache: ('Counter Formatter', 'counter_formatter', [], [('msg_in', 'message',
-      1)], [('msg_out', 'message', 1)], "\n    Receives a trigger message. On each
-      trigger, it formats a string\n    with the value of a 'counter' variable from
-      the top_block,\n    sends it as a new message, and increments the counter.\n    ",
-      [])
+    _io_cache: ('Counter Formatter', 'counter_formatter', [('packet_count', '999')],
+      [('msg_in', 'message', 1)], [('msg_out', 'message', 1)], "\n    Receives a trigger
+      message. On each trigger, it formats a string\n    with the value of a 'counter'
+      variable from the top_block,\n    sends it as a new message, and increments
+      the counter.\n    ", ['packet_count'])
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1016, 136.0]
+    coordinate: [1016, 140.0]
     rotation: 0
     state: enabled
 - name: iio_pluto_sink_0
@@ -436,25 +439,25 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    attenuation1: '50.0'
-    bandwidth: int(wide_samp_rate)
-    buffer_size: sdr_buffer_size
+    attenuation1: '0'
+    bandwidth: wide_samp_rate
+    buffer_size: buffer_size
     comment: ''
     cyclic: 'False'
     filter: ''
     filter_source: '''Auto'''
     fpass: '0'
-    frequency: int(freq_temp)
+    frequency: freq_center
     fstop: '0'
     len_tag_key: ''
-    samplerate: int(wide_samp_rate)
+    samplerate: wide_samp_rate
     type: fc32
-    uri: ip:192.168.2.1
+    uri: ip:192.168.3.1
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1176, 236.0]
+    coordinate: [648, 404.0]
     rotation: 0
     state: enabled
 - name: iio_pluto_source_0
@@ -462,30 +465,30 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    bandwidth: int(wide_samp_rate)
+    bandwidth: wide_samp_rate
     bbdc: 'True'
-    buffer_size: sdr_buffer_size
+    buffer_size: buffer_size
     comment: ''
     filter: ''
     filter_source: '''Auto'''
     fpass: '0'
-    frequency: int(freq_temp)
+    frequency: freq_center
     fstop: '0'
-    gain1: '''fast_attack'''
+    gain1: '''hybrid'''
     len_tag_key: packet_len
     manual_gain1: '64'
     maxoutbuf: '0'
     minoutbuf: '0'
     quadrature: 'True'
     rfdc: 'True'
-    samplerate: int(wide_samp_rate)
+    samplerate: wide_samp_rate
     type: fc32
-    uri: ip:192.168.2.1
+    uri: ip:192.168.3.1
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1040, 428.0]
+    coordinate: [840, 228.0]
     rotation: 0
     state: enabled
 - name: lora_rx_0
@@ -497,11 +500,11 @@ blocks:
     comment: ''
     cr: '1'
     has_crc: 'True'
-    impl_head: 'False'
-    ldro: '2'
+    impl_head: 'True'
+    ldro: '0'
     maxoutbuf: '0'
     minoutbuf: '0'
-    pay_len: '255'
+    pay_len: '6'
     print_rx: '[True,True]'
     samp_rate: int(samp_rate)
     sf: '7'
@@ -511,7 +514,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1504, 364.0]
+    coordinate: [1464, 356.0]
     rotation: 0
     state: enabled
 - name: lora_tx_0
@@ -535,70 +538,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [288, 108.0]
+    coordinate: [264, 92.0]
     rotation: 0
     state: true
-- name: qtgui_waterfall_sink_x_0
-  id: qtgui_waterfall_sink_x
-  parameters:
-    affinity: ''
-    alias: ''
-    alpha1: '1.0'
-    alpha10: '1.0'
-    alpha2: '1.0'
-    alpha3: '1.0'
-    alpha4: '1.0'
-    alpha5: '1.0'
-    alpha6: '1.0'
-    alpha7: '1.0'
-    alpha8: '1.0'
-    alpha9: '1.0'
-    axislabels: 'True'
-    bw: freq_stop - freq_start
-    color1: '0'
-    color10: '0'
-    color2: '0'
-    color3: '0'
-    color4: '0'
-    color5: '0'
-    color6: '0'
-    color7: '0'
-    color8: '0'
-    color9: '0'
-    comment: ''
-    fc: (freq_stop + freq_start) / 2
-    fftsize: '1024'
-    freqhalf: 'True'
-    grid: 'False'
-    gui_hint: ''
-    int_max: '0'
-    int_min: '-140'
-    label1: ''
-    label10: ''
-    label2: ''
-    label3: ''
-    label4: ''
-    label5: ''
-    label6: ''
-    label7: ''
-    label8: ''
-    label9: ''
-    legend: 'True'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    name: '""'
-    nconnections: '1'
-    showports: 'False'
-    type: complex
-    update_time: '0.0001'
-    wintype: window.WIN_RECTANGULAR
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1504, 548.0]
-    rotation: 0
-    state: enabled
 - name: rational_resampler_xxx_0
   id: rational_resampler_xxx
   parameters:
@@ -616,10 +558,30 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [312, 436.0]
+    coordinate: [288, 420.0]
     rotation: 0
     state: enabled
-- name: virtual_sink_0_0
+- name: rational_resampler_xxx_0_0
+  id: rational_resampler_xxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    decim: '25'
+    fbw: '0'
+    interp: '2'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    taps: '[]'
+    type: ccc
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1248, 380.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_0
   id: virtual_sink
   parameters:
     alias: ''
@@ -629,7 +591,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [536, 156.0]
+    coordinate: [512, 140.0]
     rotation: 0
     state: enabled
 - name: virtual_sink_1
@@ -642,7 +604,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1248, 132.0]
+    coordinate: [1264, 140.0]
     rotation: 0
     state: enabled
 - name: virtual_sink_2
@@ -655,20 +617,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [344, 604.0]
-    rotation: 0
-    state: enabled
-- name: virtual_sink_3
-  id: virtual_sink
-  parameters:
-    alias: ''
-    comment: ''
-    stream_id: shifted_lora_0
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [672, 476.0]
+    coordinate: [320, 596.0]
     rotation: 0
     state: enabled
 - name: virtual_source_0
@@ -681,36 +630,10 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [776, 292.0]
-    rotation: 0
-    state: enabled
-- name: virtual_source_0_0
-  id: virtual_source
-  parameters:
-    alias: ''
-    comment: ''
-    stream_id: unshifted_lora
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [80, 460.0]
+    coordinate: [56, 444.0]
     rotation: 0
     state: enabled
 - name: virtual_source_1
-  id: virtual_source
-  parameters:
-    alias: ''
-    comment: ''
-    stream_id: shift_source_0
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [768, 356.0]
-    rotation: 0
-    state: true
-- name: virtual_source_1_0
   id: virtual_source
   parameters:
     alias: ''
@@ -720,22 +643,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [72, 236.0]
+    coordinate: [48, 220.0]
     rotation: 0
     state: enabled
-- name: virtual_source_1_1
-  id: virtual_source
-  parameters:
-    alias: ''
-    comment: ''
-    stream_id: shift_source_0
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1072, 652.0]
-    rotation: 0
-    state: true
 - name: virtual_source_2
   id: virtual_source
   parameters:
@@ -746,29 +656,40 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [280, 540.0]
+    coordinate: [256, 524.0]
+    rotation: 0
+    state: enabled
+- name: virtual_source_5
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: shift_source_0
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [840, 452.0]
     rotation: 0
     state: enabled
 
 connections:
 - [analog_sig_source_x_0, '0', virtual_sink_2, '0']
-- [blocks_divide_xx_0, '0', lora_rx_0, '0']
-- [blocks_divide_xx_0, '0', qtgui_waterfall_sink_x_0, '0']
+- [blocks_divide_xx_0, '0', rational_resampler_xxx_0_0, '0']
 - [blocks_message_strobe_0, strobe, epy_block_1, msg_in]
-- [blocks_multiply_xx_0, '0', virtual_sink_3, '0']
-- [blocks_multiply_xx_1, '0', iio_pluto_sink_0, '0']
-- [epy_block_0_0, msg_out, blocks_msgpair_to_var_0_0, inpair]
+- [blocks_multiply_xx_0, '0', iio_pluto_sink_0, '0']
+- [epy_block_0, msg_out, blocks_msgpair_to_var_0, inpair]
 - [epy_block_1, msg_out, virtual_sink_1, '0']
 - [iio_pluto_source_0, '0', blocks_divide_xx_0, '0']
-- [lora_tx_0, '0', virtual_sink_0_0, '0']
+- [lora_rx_0, '0', blocks_file_sink_0, '0']
+- [lora_tx_0, '0', virtual_sink_0, '0']
 - [rational_resampler_xxx_0, '0', blocks_multiply_xx_0, '0']
-- [virtual_source_0, '0', blocks_multiply_xx_1, '0']
-- [virtual_source_0_0, '0', rational_resampler_xxx_0, '0']
-- [virtual_source_1, '0', blocks_multiply_xx_1, '1']
-- [virtual_source_1_0, '0', epy_block_0_0, msg_in]
-- [virtual_source_1_0, '0', lora_tx_0, in]
-- [virtual_source_1_1, '0', blocks_divide_xx_0, '1']
+- [rational_resampler_xxx_0_0, '0', lora_rx_0, '0']
+- [virtual_source_0, '0', rational_resampler_xxx_0, '0']
+- [virtual_source_1, '0', epy_block_0, msg_in]
+- [virtual_source_1, '0', lora_tx_0, in]
 - [virtual_source_2, '0', blocks_multiply_xx_0, '1']
+- [virtual_source_5, '0', blocks_divide_xx_0, '1']
 
 metadata:
   file_format: 1

@@ -18,6 +18,7 @@ class fhss_controller(gr.sync_block):
         self.freq_count = freq_count
         self.freq_center = freq_center
         self.disable = disable
+        self.switch = False
 
         # Register message ports
         self.message_port_register_in(pmt.intern("msg_in"))
@@ -41,7 +42,7 @@ class fhss_controller(gr.sync_block):
 
         uid_bytes = md5(self.binding_phrase.encode()).digest()[0:6]
         self.seed = (uid_bytes[2] << 24) | (uid_bytes[3] << 16) | (uid_bytes[4] << 8) | (uid_bytes[5] ^ self.OTA_VERSION_ID)
-        self.freq_sequence = [0] * self.FHSS_SEQUENCE_LEN
+        self.freq_sequence = [0] * self.num_primary_bands
         self.fhss_index = 0
         
         self.build_random_fhss_sequence()
@@ -65,21 +66,27 @@ class fhss_controller(gr.sync_block):
 
     def handle_msg(self, msg):
         if not self.disable:
-            current_freq_index = self.freq_sequence[self.fhss_index]
-            absolute_freq = self.freq_start + (current_freq_index * self.freq_spread)
-        else:
-            absolute_freq = self.freq_center
+            if self.switch:
+                current_freq_index = self.freq_sequence[self.fhss_index]
+                absolute_freq = self.freq_start + (current_freq_index * self.freq_spread)
+                freq_offset = absolute_freq - self.freq_center
 
+                key = pmt.intern("freq_temp")
+                value = pmt.from_double(freq_offset + 0) # Temp fix
+                output_msg = pmt.cons(key, value)
+
+                self.message_port_pub(pmt.intern("msg_out"), output_msg)
+                
+                self.fhss_index += 1
+                self.fhss_index %= self.num_primary_bands
+
+            self.switch = not self.switch
+        else:
             key = pmt.intern("freq_temp")
-            value = pmt.from_double(absolute_freq)
+            value = pmt.from_double(self.freq_center + 0) # Temp fix
             output_msg = pmt.cons(key, value)
 
             self.message_port_pub(pmt.intern("msg_out"), output_msg)
-            
-        if not self.disable:
-            self.fhss_index = (self.fhss_index + 1) % self.freq_count
-
-        print(f"\nCurrent frequency: {int(absolute_freq)}")
 
     def work(self, input_items, output_items):
         return 0

@@ -26,9 +26,9 @@ from .lora_sdr_lora_tx_mod import lora_sdr_lora_tx_mod
 from .fhss_domains import FHSS_DOMAINS, get_additional_domain_settings
 from .OTA import OTA_Packet4_s, OTA4_PACKET_SIZE, ELRS4_TELEMETRY_BYTES_PER_CALL, PACKET_TYPE_DATA, PACKET_TYPE_LINKSTATS, PACKET_TYPE_RCDATA, PACKET_TYPE_SYNC
 
-class elrs_receiver(gr.sync_block):
-    def __init__(self, domain: str="FCC915", packet_rate: int=25, binding_phrase: str="DefaultBindingPhrase"):
-        gr.sync_block.__init__(self, name="elrs_receiver", in_sig=[], out_sig=[])
+class _elrs_receiver_internal(gr.sync_block):
+    def __init__(self, domain: dict, additional_settings: dict, packet_rate: int, binding_phrase: str):
+        gr.sync_block.__init__(self, name="_elrs_receiver_internal", in_sig=[], out_sig=[])
 
         self.message_port_register_in(pmt.intern('in')) # type: ignore
         self.message_port_register_in(pmt.intern('fhss_request_in')) # type: ignore
@@ -36,11 +36,12 @@ class elrs_receiver(gr.sync_block):
         self.message_port_register_out(pmt.intern('fhss_request_out')) # type: ignore
 
         self.set_msg_handler(pmt.intern('in'), self._lora_rx_msg_handler) # type: ignore
+        self.set_msg_handler(pmt.intern('fhss_request_in'), self._fhss_request_msg_handler) # type: ignore
 
         self._packet_rate = packet_rate
         self._binding_phrase = binding_phrase
-        self._domain = FHSS_DOMAINS[domain]
-        self._additional_settings = get_additional_domain_settings(domain, packet_rate)
+        self._domain = domain
+        self._additional_settings = additional_settings
         self._fhss_enabled = True
 
         self._uid = md5(str(f'-DMY_BINDING_PHRASE="{binding_phrase}"').encode('utf-8')).digest()[:6]
@@ -140,3 +141,120 @@ class elrs_receiver(gr.sync_block):
 
         #     pdu = pmt.cons(pmt.PMT_NIL, pmt.init_u8vector(len(backing_bytes), backing_bytes))  # type: ignore
         #     self.message_port_post(pmt.intern('internal_tx_pdu'), pdu) # type: ignore
+
+    def _fhss_request_msg_handler(self, msg) -> None:
+        temp: int = 0
+        
+        if self._fhss_enabled:
+            temp = self._fhss_handler.get_curr_freq()
+            self._fhss_handler.update_to_next_freq()
+        else:
+            temp = self._fhss_handler.get_center_freq()
+        
+        self.message_port_pub(pmt.intern('fhss_request_out'), pmt.from_long(temp)) # type: ignore
+
+class elrs_receiver(gr.hier_block2):
+    """
+    docstring for block elrs_receiver
+    """
+    def __init__(self, domain="FCC915", packet_rate=25, binding_phrase="DefaultBindingPhrase"):
+        gr.hier_block2.__init__(self,
+            name="elrs_receiver",
+            input_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize), # type: ignore
+            output_signature=gr.io_signature(1, 1, numpy.dtype(numpy.complex64).itemsize)) # type: ignore
+        
+        fhss_domain = FHSS_DOMAINS[domain]
+        additional_settings = get_additional_domain_settings(domain, (packet_rate if packet_rate != 1 else 25))
+        if additional_settings is None:
+            raise Exception('Invalid domain and packet rate combination!')
+
+        self._elrs_rx_internal = _elrs_receiver_internal(fhss_domain, additional_settings, packet_rate, binding_phrase)
+        
+        # inter_deci_frac = Fraction(self._elrs_rx_internal.get_freq_range(), additional_settings['bandwidth'] * 2)
+        # resampler_expand_params = {
+        #     'interpolation' : inter_deci_frac.numerator,
+        #     'decimation'    : inter_deci_frac.denominator,
+        #     'taps'          : [],
+        #     'fractional_bw' : 0.4
+        # }
+
+        # self._rational_resampler_expand = filter.rational_resampler_ccc(**resampler_expand_params) # type: ignore
+
+        # resampler_shrink_params = {
+        #     'interpolation' : inter_deci_frac.denominator,
+        #     'decimation'    : inter_deci_frac.numerator,
+        #     'taps'          : [],
+        #     'fractional_bw' : 0.4
+        # }
+
+        # self._rational_resampler_shrink = filter.rational_resampler_ccc(**resampler_shrink_params) # type: ignore
+
+        resampling_rate_expand = self._elrs_rx_internal.get_freq_range() / (additional_settings['bandwidth'] * 2)
+        resampling_rate_shrink = (additional_settings['bandwidth'] * 2) / self._elrs_rx_internal.get_freq_range()
+
+        self._resampler_expand = pfb.arb_resampler_ccf(
+            rate=resampling_rate_expand,
+            taps=None,
+            flt_size=32
+        )
+
+        self._resampler_shrink = pfb.arb_resampler_ccf(
+            rate=resampling_rate_shrink,
+            taps=None,
+            flt_size=32
+        )
+
+        shift_signal_gen_params = {
+            'sampling_freq' : self._elrs_rx_internal.get_freq_range(),
+            'waveform'      : analog.GR_COS_WAVE, # type: ignore
+            'wave_freq'     : self._elrs_rx_internal.get_init_freq() - 3e6,
+            'ampl'          : 1,
+            'offset'        : 0
+        }
+
+        self._shift_signal_gen = analog.sig_source_c(**shift_signal_gen_params) # type: ignore
+
+        lora_rx_params = {
+            'center_freq' : self._elrs_rx_internal.get_center_freq(),
+            'has_crc' : False,
+            'impl_head' : True,
+            'bw' : additional_settings['bandwidth'],
+            'cr' : additional_settings['coding_rate'],
+            'sf' : additional_settings['spread_factor'],
+            'samp_rate' : additional_settings['bandwidth'] * 2,
+            'pay_len' : OTA4_PACKET_SIZE,
+            'ldro_mode' : 0
+        }
+
+        self._lora_rx = lora_sdr_lora_rx_mod(**lora_rx_params)
+
+        lora_tx_params = {
+            'has_crc' : False,
+            'impl_head' : True,
+            'bw' : additional_settings['bandwidth'],
+            'cr' : additional_settings['coding_rate'],
+            'sf' : additional_settings['spread_factor'],
+            'samp_rate' : additional_settings['bandwidth'] * 2,
+            'ldro_mode' : 0
+        }
+
+        self._lora_tx = lora_sdr_lora_tx_mod(**lora_tx_params)
+
+        self._multiplier = blocks.multiply_vcc(vlen=1) # type: ignore
+        self._divider = blocks.divide_cc(vlen=1) # type: ignore
+
+        self.msg_connect((self._lora_rx, 'out'), (self._elrs_rx_internal, 'in'))
+        self.msg_connect((self._elrs_rx_internal, 'out'), (self._lora_tx, 'in'))
+
+        # self.connect(self, (self._divider, 0))
+        # self.connect(self._shift_signal_gen, (self._divider, 1))
+        # self.connect(self._divider, self._resampler_shrink)
+        # self.connect(self._resampler_shrink, self._lora_rx)
+
+        # self.connect(self._lora_tx, self._resampler_expand)
+        # self.connect(self._resampler_expand, (self._multiplier, 0))
+        # self.connect(self._shift_signal_gen, (self._multiplier, 1))
+        # self.connect(self._multiplier, self)
+
+        self.connect(self._lora_tx, (self, 0))
+        self.connect((self, 0), self._lora_rx)
